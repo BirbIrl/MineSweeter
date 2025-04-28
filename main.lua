@@ -111,6 +111,10 @@ end
 function love.update()
 	if love.mouse.isDown(1) then
 		local newPos = vector.new(love.mouse.getPosition())
+		if m1.lastMousePos then
+			config.pan.x = config.pan.x + (newPos.x - m1.lastMousePos.x)
+			config.pan.y = config.pan.y + (newPos.y - m1.lastMousePos.y)
+		end
 		m1.startingMousePos = m1.startingMousePos or newPos
 		m1.lastMousePos = newPos
 	else

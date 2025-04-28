@@ -1,6 +1,6 @@
 ---@diagnostic disable: redefined-local
 local globals = require("globals")
-local function lambaOnNeighbours(grid, pos, func)
+local function lambdaOnNeighbours(grid, pos, func)
 	local hits = 0
 	for x = -1, 1, 1 do
 		for y = -1, 1, 1 do
@@ -45,19 +45,28 @@ local tileTemplate = {
 		end
 
 		function tile:triggerNeighbours()
-			lambaOnNeighbours(self.parentGrid, self.position, function(tile)
-				return tile:trigger()
+			return lambdaOnNeighbours(self.parentGrid, self.position, function(tile)
+				if not tile.cleared then
+					return tile:trigger()
+				end
+				return false
 			end)
 		end
 
 		function tile:observeNeighbours()
-			lambaOnNeighbours(self.parentGrid, self.position, function(tile)
+			return lambdaOnNeighbours(self.parentGrid, self.position, function(tile)
 				return tile:observe()
 			end)
 		end
 
+		function tile:countNeighboursFlags()
+			return lambdaOnNeighbours(self.parentGrid, self.position, function(tile)
+				return tile.mine
+			end)
+		end
+
 		function tile:getLabel()
-			self.label = lambaOnNeighbours(self.parentGrid, self.position, function(tile)
+			self.label = lambdaOnNeighbours(self.parentGrid, self.position, function(tile)
 				if tile.mine then
 					return true
 				else
@@ -70,16 +79,22 @@ local tileTemplate = {
 		end
 
 		function tile:trigger()
-			if self.cleared == false and not self.flagged then
-				if self.mine == nil then
-					self:observe()
-				end
-				self.cleared = true
-				if self.mine then
-					print("Boom!!")
+			if not self.flagged then
+				if self.cleared == false then
+					if self.mine == nil then
+						self:observe()
+					end
+					self.cleared = true
+					if self.mine then
+						print("Boom!!")
+					else
+						self:observeNeighbours()
+						self:getLabel()
+					end
 				else
-					self:observeNeighbours()
-					self:getLabel()
+					if self.label == self:countNeighboursFlags() then
+						self:triggerNeighbours()
+					end
 				end
 			end
 		end
