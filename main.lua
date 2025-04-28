@@ -9,7 +9,8 @@ local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
 
 local config = {
 	zoom = 2,
-	pan = vector.new(0, 0)
+	pan = vector.new(0, 0),
+	fieldsize = vector.new(50, 75)
 }
 local grid
 local function addTile(grid, tile, x, y)
@@ -18,15 +19,29 @@ local function addTile(grid, tile, x, y)
 	grid[x][y] = tile
 end
 
+function love.keypressed(key)
+if key == "r" then
+	grid = {
+		gamestate = {
+			freebies = math.random(15, 22)
+		}
+	}
+	for x = 1, config.fieldsize.x, 1 do
+		for y = 1, config.fieldsize.y, 1 do
+			addTile(grid, Tile:new(grid, vector.new(x, y)), x, y)
+		end
+	end
+end
 
+end
 function love.load()
 	grid = {
 		gamestate = {
 			freebies = math.random(15, 22)
 		}
 	}
-	for x = 1, 10, 1 do
-		for y = 1, 10, 1 do
+	for x = 1, config.fieldsize.x, 1 do
+		for y = 1, config.fieldsize.y, 1 do
 			addTile(grid, Tile:new(grid, vector.new(x, y)), x, y)
 		end
 	end
