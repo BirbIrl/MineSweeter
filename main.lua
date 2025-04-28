@@ -37,6 +37,7 @@ end
 function love.load()
 	grid = {
 		gamestate = {
+			forceClick = true,
 			freebies = math.random(15, 22)
 		}
 	}
@@ -102,11 +103,11 @@ local function triggerTile(grid, mousePos, mouseButton)
 	)
 	if grid[x] and grid[x][y] then
 		if mouseButton == 1 then
-			grid[x][y]:trigger()
+			grid[x][y]:trigger(nil, grid.gamestate.forceClick)
+			grid.gamestate.forceClick = false
 		elseif mouseButton == 2 then
 			grid[x][y]:flag()
 		elseif mouseButton == 3 then
-			grid[x][y]:trigger(nil, true)
 		else
 			error("need to provide mouse button for triggerTile")
 		end
@@ -182,8 +183,8 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 				elseif tile.label then
 					love.graphics.setColor(0.2, 0.2, 0.2, 1)
 					love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
-				elseif tile.mine ~= nil then -- TODO: delete
-					love.graphics.setColor(0, 0, 0.2, 1)
+				elseif tile.mine ~= nil then -- TODO: delete the blue tint and replace with smth else
+					love.graphics.setColor(0.05, 0.1, 0.2, 1)
 					love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
 				end
 				love.graphics.setColor(1, 1, 1, 1)
