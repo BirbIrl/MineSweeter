@@ -11,11 +11,7 @@ local config = {
 	zoom = 2,
 	pan = vector.new(0, 0)
 }
-local grid = {
-	gamestate = {
-		freebies = math.random(15, 22)
-	}
-}
+local grid
 local function addTile(grid, tile, x, y)
 	grid = grid or {}
 	grid[x] = grid[x] or {}
@@ -24,6 +20,11 @@ end
 
 
 function love.load()
+	grid = {
+		gamestate = {
+			freebies = math.random(15, 22)
+		}
+	}
 	for x = 1, 10, 1 do
 		for y = 1, 10, 1 do
 			addTile(grid, Tile:new(grid, vector.new(x, y)), x, y)
