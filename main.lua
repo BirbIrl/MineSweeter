@@ -10,7 +10,7 @@ local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
 local config = {
 	zoom = 2,
 	pan = vector.new(0, 0),
-	fieldsize = vector.new(50, 75)
+	fieldsize = vector.new(20, 25)
 }
 local grid
 local function addTile(grid, tile, x, y)
@@ -105,7 +105,6 @@ local function triggerTile(grid, mousePos, mouseButton)
 			error("need to provide mouse button for triggerTile")
 		end
 	end
-	print(x, y)
 end
 
 function love.update()

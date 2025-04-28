@@ -61,7 +61,7 @@ local tileTemplate = {
 
 		function tile:countNeighboursFlags()
 			return lambdaOnNeighbours(self.parentGrid, self.position, function(tile)
-				return tile.mine
+				return tile.flagged
 			end)
 		end
 
@@ -93,6 +93,7 @@ local tileTemplate = {
 					end
 				else
 					if self.label == self:countNeighboursFlags() then
+						print(self.label, self:countNeighboursFlags())
 						self:triggerNeighbours()
 					end
 				end
