@@ -20,20 +20,20 @@ local function addTile(grid, tile, x, y)
 end
 
 function love.keypressed(key)
-if key == "r" then
-	grid = {
-		gamestate = {
-			freebies = math.random(15, 22)
+	if key == "r" then
+		grid = {
+			gamestate = {
+				freebies = math.random(15, 22)
+			}
 		}
-	}
-	for x = 1, config.fieldsize.x, 1 do
-		for y = 1, config.fieldsize.y, 1 do
-			addTile(grid, Tile:new(grid, vector.new(x, y)), x, y)
+		for x = 1, config.fieldsize.x, 1 do
+			for y = 1, config.fieldsize.y, 1 do
+				addTile(grid, Tile:new(grid, vector.new(x, y)), x, y)
+			end
 		end
 	end
 end
 
-end
 function love.load()
 	grid = {
 		gamestate = {
@@ -112,10 +112,6 @@ function love.update()
 	if love.mouse.isDown(1) then
 		local newPos = vector.new(love.mouse.getPosition())
 		m1.startingMousePos = m1.startingMousePos or newPos
-		if m1.lastMousePos then
-			config.pan.x = config.pan.x + (newPos.x - m1.lastMousePos.x)
-			config.pan.y = config.pan.y + (newPos.y - m1.lastMousePos.y)
-		end
 		m1.lastMousePos = newPos
 	else
 		if m1.lastMousePos or m1.startingMousePos then
@@ -129,6 +125,10 @@ function love.update()
 	if love.mouse.isDown(2) then
 		local newPos = vector.new(love.mouse.getPosition())
 		m2.startingMousePos = m2.startingMousePos or newPos
+		if m2.lastMousePos then
+			config.pan.x = config.pan.x + (newPos.x - m2.lastMousePos.x)
+			config.pan.y = config.pan.y + (newPos.y - m2.lastMousePos.y)
+		end
 		m2.lastMousePos = newPos
 	else
 		if m2.lastMousePos or m2.startingMousePos then
