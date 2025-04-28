@@ -88,6 +88,10 @@ local m2 = {
 	lastMousePos = nil,
 	startingMousePos = nil
 }
+local m3 = {
+	lastMousePos = nil,
+	startingMousePos = nil
+}
 local function triggerTile(grid, mousePos, mouseButton)
 	local size = globals.tilesize * config.zoom
 	x = math.floor(
@@ -101,6 +105,8 @@ local function triggerTile(grid, mousePos, mouseButton)
 			grid[x][y]:trigger()
 		elseif mouseButton == 2 then
 			grid[x][y]:flag()
+		elseif mouseButton == 3 then
+			grid[x][y]:trigger(nil, true)
 		else
 			error("need to provide mouse button for triggerTile")
 		end
@@ -142,6 +148,23 @@ function love.update()
 			m2.startingMousePos = nil
 		end
 	end
+	if love.mouse.isDown(3) then
+		local newPos = vector.new(love.mouse.getPosition())
+		m3.startingMousePos = m3.startingMousePos or newPos
+		if m3.lastMousePos then
+			config.pan.x = config.pan.x + (newPos.x - m3.lastMousePos.x)
+			config.pan.y = config.pan.y + (newPos.y - m3.lastMousePos.y)
+		end
+		m3.lastMousePos = newPos
+	else
+		if m3.lastMousePos or m3.startingMousePos then
+			if m3.lastMousePos:dist(m3.startingMousePos) <= 10 then
+				triggerTile(grid, m3.lastMousePos, 3)
+			end
+			m3.lastMousePos = nil
+			m3.startingMousePos = nil
+		end
+	end
 end
 
 function love.draw() ---@diagnostic disable-line: duplicate-set-field
@@ -164,7 +187,10 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 					love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
 				end
 				love.graphics.setColor(1, 1, 1, 1)
-				printTileLabel(tile, x, y, size)
+				if not (tile.cleared and tile.mine) then
+					printTileLabel(tile, x, y, size)
+				end
+
 				love.graphics.rectangle("line", config.pan.x + size * x, config.pan.y + size * y, size, size)
 			end
 		end
