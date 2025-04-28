@@ -52,20 +52,27 @@ local function printTileLabel(tile, x, y, size)
 		color = { 0.5, 0, 0.5, 1 }
 	elseif label == 8 then
 		color = { 0.5, 0.5, 0.5, 1 }
-	elseif label == "F" then
-		color = { 1, 1, 0, 1 }
 	end
 
+	if tile.flagged then
+		label = "F"
+		color = { 1, 1, 0, 1 }
+	end
 
 	love.graphics.print({ color, label }, tileFont, config.pan.x + size * x + size / 4.5, config.pan.y + size * y, nil,
 		size / 100,
 		size / 100)
 end
 
-local lastMousePos
-local startingMousePos
-
-local function triggerTile(grid, mousePos)
+local m1 = {
+	lastMousePos = nil,
+	startingMousePos = nil
+}
+local m2 = {
+	lastMousePos = nil,
+	startingMousePos = nil
+}
+local function triggerTile(grid, mousePos, mouseButton)
 	local size = globals.tilesize * config.zoom
 	x = math.floor(
 		(mousePos.x - config.pan.x) / size
@@ -74,7 +81,13 @@ local function triggerTile(grid, mousePos)
 		(mousePos.y - config.pan.y) / size
 	)
 	if grid[x] and grid[x][y] then
-		grid[x][y]:trigger()
+		if mouseButton == 1 then
+			grid[x][y]:trigger()
+		elseif mouseButton == 2 then
+			grid[x][y]:flag()
+		else
+			error("need to provide mouse button for triggerTile")
+		end
 	end
 	print(x, y)
 end
@@ -82,19 +95,32 @@ end
 function love.update()
 	if love.mouse.isDown(1) then
 		local newPos = vector.new(love.mouse.getPosition())
-		startingMousePos = startingMousePos or newPos
-		if lastMousePos then
-			config.pan.x = config.pan.x + (newPos.x - lastMousePos.x)
-			config.pan.y = config.pan.y + (newPos.y - lastMousePos.y)
+		m1.startingMousePos = m1.startingMousePos or newPos
+		if m1.lastMousePos then
+			config.pan.x = config.pan.x + (newPos.x - m1.lastMousePos.x)
+			config.pan.y = config.pan.y + (newPos.y - m1.lastMousePos.y)
 		end
-		lastMousePos = newPos
+		m1.lastMousePos = newPos
 	else
-		if lastMousePos or startingMousePos then
-			if lastMousePos:dist(startingMousePos) <= 10 then
-				triggerTile(grid, lastMousePos)
+		if m1.lastMousePos or m1.startingMousePos then
+			if m1.lastMousePos:dist(m1.startingMousePos) <= 10 then
+				triggerTile(grid, m1.lastMousePos, 1)
 			end
-			lastMousePos = nil
-			startingMousePos = nil
+			m1.lastMousePos = nil
+			m1.startingMousePos = nil
+		end
+	end
+	if love.mouse.isDown(2) then
+		local newPos = vector.new(love.mouse.getPosition())
+		m2.startingMousePos = m2.startingMousePos or newPos
+		m2.lastMousePos = newPos
+	else
+		if m2.lastMousePos or m2.startingMousePos then
+			if m2.lastMousePos:dist(m2.startingMousePos) <= 10 then
+				triggerTile(grid, m2.lastMousePos, 2)
+			end
+			m2.lastMousePos = nil
+			m2.startingMousePos = nil
 		end
 	end
 end
@@ -105,7 +131,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		if type(x) == "number" then
 			for y, tile in pairs(row) do
 				if tile.cleared then
-					if tile.isMine then
+					if tile.mine then
 						love.graphics.setColor(1, 0.25, 0.25, 1)
 					else
 						love.graphics.setColor(0.75, 0.75, 0.75, 1)
@@ -114,7 +140,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 				elseif tile.label then
 					love.graphics.setColor(0.2, 0.2, 0.2, 1)
 					love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
-				elseif tile.isMine ~= nil then -- TODO: delete
+				elseif tile.mine ~= nil then -- TODO: delete
 					love.graphics.setColor(0, 0, 0.2, 1)
 					love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
 				end

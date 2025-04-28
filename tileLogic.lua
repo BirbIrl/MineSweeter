@@ -21,21 +21,22 @@ local tileTemplate = {
 		{
 			size = globals.tilesize,
 			label = nil,
-			isMine = nil,
+			mine = nil,
+			flagged = false,
 			position = position,
 			parentGrid = parentGrid,
 			cleared = false,
 		}
 
 		function tile:observe()
-			if self.isMine == nil then
+			if self.mine == nil then
 				if self.parentGrid.gamestate.freebies > 0 then
-					self.isMine = false
+					self.mine = false
 					self.parentGrid.gamestate.freebies = self.parentGrid.gamestate.freebies - 1
 				elseif math.random() <= 0.25 then
-					self.isMine = true
+					self.mine = true
 				else
-					self.isMine = false
+					self.mine = false
 				end
 			else
 				return false
@@ -57,7 +58,7 @@ local tileTemplate = {
 
 		function tile:getLabel()
 			self.label = lambaOnNeighbours(self.parentGrid, self.position, function(tile)
-				if tile.isMine then
+				if tile.mine then
 					return true
 				else
 					return false
@@ -69,17 +70,23 @@ local tileTemplate = {
 		end
 
 		function tile:trigger()
-			if self.cleared == false then
-				if self.isMine == nil then
+			if self.cleared == false and not self.flagged then
+				if self.mine == nil then
 					self:observe()
 				end
 				self.cleared = true
-				if self.isMine then
+				if self.mine then
 					print("Boom!!")
 				else
 					self:observeNeighbours()
 					self:getLabel()
 				end
+			end
+		end
+
+		function tile:flag()
+			if self.mine ~= nil and not self.cleared then
+				self.flagged = not self.flagged
 			end
 		end
 
