@@ -6,6 +6,8 @@ local Tile = require("tileLogic")
 local globals = require("globals")
 local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
 
+love.graphics.setDefaultFilter("nearest")
+love.window.setMode(1920, 1080, { resizable = true })
 
 local config = {
 	zoom = 2,
@@ -23,6 +25,7 @@ function love.keypressed(key)
 	if key == "r" then
 		grid = {
 			gamestate = {
+				forceClick = true,
 				freebies = math.random(15, 22)
 			}
 		}
