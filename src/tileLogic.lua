@@ -46,8 +46,13 @@ tileTemplate = {
 			flagged = false,
 			position = position,
 			parentGrid = parentGrid,
+			decay = 1,
+			decaying = false,
+			decayrate = 0.002,
+			halflife = 0.5,
 			cleared = false,
 		}
+
 
 		function tile:observe(chain)
 			if self.mine == nil then
@@ -87,6 +92,12 @@ tileTemplate = {
 			end, radius, curve)
 		end
 
+		function tile:startDecayInRadius(radius, curve)
+			return lambdaInRadius(self.parentGrid, self.position, function(tile)
+				if tile.decay > 0 then tile.decaying = true end
+			end, radius, curve)
+		end
+
 		function tile:generateInRadius(radius, curve)
 			generateTilesInRadius(self.parentGrid, self.position, radius, curve)
 		end
@@ -110,14 +121,30 @@ tileTemplate = {
 			end
 		end
 
+		function tile:tick()
+			if tile.decaying and tile.decay > 0 then
+				tile.decay = tile.decay - tile.decayrate
+				if tile.decay < 0 then
+					tile.decay = 0
+				end
+			end
+			if tile.halflife and tile.decay < tile.halflife then
+				tile:startDecayInRadius(1, true)
+				tile.halflife = false
+			end
+		end
+
 		function tile:trigger(chain, force)
 			chain = chain or 1
-			if not self.flagged then
+			if not self.flagged and self.decay > 0 then
 				if self.cleared == false then
 					if self.mine == nil and not force then
 						return false
 					end
 					self.cleared = true
+					if force then
+						self.decaying = true
+					end
 					if self.mine then
 						print("Boom!!")
 					else
