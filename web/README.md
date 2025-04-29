@@ -1,7 +1,6 @@
 LÖVE HTML5/Web Assembly
 ============
- #this is a slightly modded implementation of: https://github.com/rozenmad/love-web-builder
-by rozenmad, by far the best implementation of davidobot and tannerrogalsky's work
+# this is a slightly modded implementation of: https://github.com/rozenmad/love-web-builder by rozenmad, by far the best implementation of davidobot and tannerrogalsky's work
 
 Emscripten port of LÖVE framework version 12.0 for distribution your games on the web.
 - https://github.com/love2d/love/tree/main
