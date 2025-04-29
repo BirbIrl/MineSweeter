@@ -6,6 +6,7 @@ local Tile = require("tileLogic")
 local globals = require("globals")
 local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
 
+
 love.graphics.setDefaultFilter("nearest")
 love.window.setMode(1920, 1080, { resizable = true })
 
@@ -27,7 +28,11 @@ function love.keypressed(key)
 		grid = {
 			gamestate = {
 				forceClick = true,
-				freebies = math.random(20, 25)
+				freebies = love.math.random(20, 25),
+				finished = false,
+				score = {
+					tiles = 0
+				},
 			}
 		}
 		for x = 1, config.fieldsize.x, 1 do
@@ -45,7 +50,11 @@ function love.load()
 	grid = {
 		gamestate = {
 			forceClick = true,
-			freebies = math.random(15, 22)
+			freebies = love.math.random(15, 22),
+			finished = false,
+			score = {
+				tiles = 0
+			},
 		}
 	}
 	for x = 1, config.fieldsize.x, 1 do
@@ -55,32 +64,32 @@ function love.load()
 	end
 end
 
-local function printTileLabel(tile, x, y, size)
+local function printTileLabel(tile, x, y, size, tileOpacity)
 	local label = tile.label
-	local color = { 1, 1, 1, 1 * tile.decay }
+	local color = { 1, 1, 1, 1 * tileOpacity }
 	if label == 0 then
 		color = { 0, 0, 0, 0 }
 	elseif label == 1 then
-		color = { 0, 0, 1, 1 * tile.decay }
+		color = { 0, 0, 1, 1 * tileOpacity }
 	elseif label == 2 then
-		color = { 0, 0.5, 0, 1 * tile.decay }
+		color = { 0, 0.5, 0, 1 * tileOpacity }
 	elseif label == 3 then
-		color = { 1, 0, 0, 1 * tile.decay }
+		color = { 1, 0, 0, 1 * tileOpacity }
 	elseif label == 4 then
-		color = { 0, 0, 0.5, 1 * tile.decay }
+		color = { 0, 0, 0.5, 1 * tileOpacity }
 	elseif label == 5 then
-		color = { 0.5, 0, 0, 1 * tile.decay }
+		color = { 0.5, 0, 0, 1 * tileOpacity }
 	elseif label == 6 then
-		color = { 0, 0.5, 0.5, 1 * tile.decay }
+		color = { 0, 0.5, 0.5, 1 * tileOpacity }
 	elseif label == 7 then
-		color = { 0.5, 0, 0.5, 1 * tile.decay }
+		color = { 0.5, 0, 0.5, 1 * tileOpacity }
 	elseif label == 8 then
-		color = { 0.5, 0.5, 0.5, 1 * tile.decay }
+		color = { 0.5, 0.5, 0.5, 1 * tileOpacity }
 	end
 
 	if tile.flagged then
 		label = "F"
-		color = { 1, 1, 0, 1 * tile.decay }
+		color = { 1, 1, 0, 1 * tileOpacity }
 	end
 
 	love.graphics.print({ color, label }, tileFont, config.pan.x + size * x + size / 4.5, config.pan.y + size * y, nil,
@@ -102,33 +111,57 @@ local m3 = {
 }
 local function triggerTile(grid, mousePos, mouseButton)
 	local size = globals.tilesize * config.zoom
-	x = math.floor(
-		(mousePos.x - config.pan.x) / size
-	)
-	y = math.floor(
-		(mousePos.y - config.pan.y) / size
-	)
-	if grid[x] and grid[x][y] then
-		if mouseButton == 1 then
-			grid[x][y]:trigger(nil, grid.gamestate.forceClick)
-			grid.gamestate.forceClick = false
-		elseif mouseButton == 2 then
-			grid[x][y]:flag()
-		elseif mouseButton == 3 then
-		else
-			error("need to provide mouse button for triggerTile")
+	if not grid.gamestate.finished then
+		x = math.floor(
+			(mousePos.x - config.pan.x) / size
+		)
+		y = math.floor(
+			(mousePos.y - config.pan.y) / size
+		)
+		if grid[x] and grid[x][y] then
+			if mouseButton == 1 then
+				grid[x][y]:trigger(nil, grid.gamestate.forceClick)
+				grid.gamestate.forceClick = false
+			elseif mouseButton == 2 then
+				grid[x][y]:flag()
+			elseif mouseButton == 3 then
+			else
+				error("need to provide mouse button for triggerTile")
+			end
 		end
 	end
 end
 
 function love.update()
 	if not config.pause then
+		local aliveTiles = 0
 		for x, column in pairs(grid) do
 			if type(x) == "number" then
 				for y, tile in pairs(column) do
-					tile:tick()
+					if not grid.gamestate.finished then
+						tile:tick()
+					end
+					if tile.mine ~= nil and tile.decay > 0 then
+						aliveTiles = aliveTiles + 1
+					end
 				end
 			end
+		end
+		if aliveTiles == 0 and not grid.gamestate.forceClick and not grid.gamestate.finished then
+			print(aliveTiles)
+			grid.gamestate.finished = true
+			local score = 0
+			for x, column in pairs(grid) do
+				if type(x) == "number" then
+					for y, tile in pairs(column) do
+						if tile.cleared then
+							score = score + 1
+						end
+					end
+				end
+			end
+			grid.gamestate.score.tiles = score
+			print(grid.gamestate.score.tiles)
 		end
 
 		if love.mouse.isDown(1) then
@@ -191,24 +224,28 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	for x, row in pairs(grid) do
 		if type(x) == "number" then
 			for y, tile in pairs(row) do
+				local tileOpacity = tile.decay
+				if grid.gamestate.finished then
+					tileOpacity = 1
+				end
 				if tile.cleared then
 					if tile.mine then
-						love.graphics.setColor(1, 0.25, 0.25, 1 * tile.decay)
+						love.graphics.setColor(1, 0.25, 0.25, 1 * tileOpacity)
 					else
-						love.graphics.setColor(0.75, 0.75, 0.75, 1 * tile.decay)
+						love.graphics.setColor(0.75, 0.75, 0.75, 1 * tileOpacity)
 					end
 					love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
 				elseif tile.label then
-					love.graphics.setColor(0.2, 0.2, 0.2, 1 * tile.decay)
+					love.graphics.setColor(0.2, 0.2, 0.2, 1 * tileOpacity)
 					love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
 				elseif tile.mine ~= nil then -- TODO: delete the blue tint and replace with smth else
-					love.graphics.setColor(0.05, 0.1, 0.2, 1 * tile.decay)
+					love.graphics.setColor(0.05, 0.1, 0.2, 1 * tileOpacity)
 					love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
 				end
-				love.graphics.setColor(1, 1, 1, 1 * tile.decay)
+				love.graphics.setColor(1, 1, 1, 1 * tileOpacity)
 				if not (tile.cleared and tile.mine) then
 					if not config.pause then
-						printTileLabel(tile, x, y, size)
+						printTileLabel(tile, x, y, size, tileOpacity)
 					end
 				end
 
@@ -216,6 +253,22 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 			end
 		end
 	end
+	local splash = ""
+	if grid.gamestate.finished then
+		splash = "Death :(\nScore: " .. grid.gamestate.score.tiles
+	elseif config.pause then
+		splash = "Game Paused"
+	end
+	local textScale = love.graphics.getWidth() * 0.5 / 1080
+	love.graphics.printf(splash, tileFont, 0,
+		love.graphics.getHeight() * 0.05, love.graphics.getWidth() / textScale,
+		"center", 0, textScale)
+	love.graphics.print(
+		"MineSweeter alpha" ..
+		"\nFPS: " ..
+		love.timer.getFPS() ..
+		"\nLeft click to reveal a tile\nRight Click to mark a mine\nR to restart\nP to pause",
+		tileFont, 0, 0, 0, 1 / 5)
 end
 
 function love.wheelmoved(x, y)
