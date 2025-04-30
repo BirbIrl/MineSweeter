@@ -298,23 +298,23 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	elseif config.pause then
 		splash = "Game Paused"
 	end
-	local textScale = love.graphics.getWidth() * 0.5 / 1080
+	local textScale = (love.graphics.getWidth() + love.graphics.getHeight()) / (1080 + 1920)
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.printf(splash, tileFont, 0,
-		love.graphics.getHeight() * 0.05, love.graphics.getWidth() / textScale,
+		(love.graphics.getHeight() - (textScale * 200)) * 0.75, love.graphics.getWidth() / textScale,
 		"center", 0, textScale)
 	love.graphics.print(
 		"MineSweeter alpha" ..
 		"\nFPS: " ..
 		love.timer.getFPS() ..
 		"\nLeft click to reveal a tile\nRight Click to mark a mine\nR to restart\nP to pause\nf1 to disable rendering (debug)\nf11 to fullscreen",
-		tileFont, 0, 0, 0, 1 / 5)
+		tileFont, 0, 0, 0, 0.15)
 end
 
 function love.wheelmoved(x, y)
 	local mouseX, mouseY = love.mouse.getPosition()
 	local oldZoom = config.zoom
-	config.zoom = config.zoom + (config.zoom * y * 0.05)
+	config.zoom = config.zoom + (config.zoom * y * 0.5)
 	config.pan.x = config.pan.x + (mouseX - config.pan.x) * (1 - config.zoom / oldZoom)
 	config.pan.y = config.pan.y + (mouseY - config.pan.y) * (1 - config.zoom / oldZoom)
 end
