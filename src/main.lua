@@ -39,10 +39,10 @@ local gridTemplate = {
 			end
 		end
 
-		function grid:lambdaOnAllTiles(fun, grid)
-			grid = grid or self
+		function grid:lambdaOnAllTiles(fun, tileGrid)
+			tileGrid = tileGrid or self.tiles
 			local hits = 0
-			for _, column in pairs(grid.tiles) do
+			for _, column in pairs(tileGrid) do
 				for _, tile in pairs(column) do
 					if fun(tile) then
 						hits = hits + 1
@@ -166,6 +166,11 @@ function love.update()
 		if aliveTiles == 0 and not grid.gamestate.forceClick and not grid.gamestate.finished then
 			print(aliveTiles)
 			grid.gamestate.finished = true
+			grid:lambdaOnAllTiles(function(tile)
+				tile.parentGrid.tiles[tile.position.x] = tile.parentGrid.tiles[tile.position.x] or {}
+				tile.parentGrid.tiles[tile.position.x][tile.position.y] = tile
+				tile.parentGrid.unloadedTiles[tile.position.x][tile.position.y] = nil
+			end, grid.unloadedTiles)
 			local score = 0
 			score = grid:lambdaOnAllTiles(function(tile)
 				if not tile.cleared then
