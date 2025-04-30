@@ -66,7 +66,7 @@ local config = {
 	zoom = 2,
 	pan = vector.new(0, 0),
 	pause = false,
-	fieldsize = vector.new(2, 2)
+	fieldsize = vector.new(10, 10)
 }
 local grid
 
@@ -140,8 +140,8 @@ function love.update()
 			end, grid.unloadedTiles)
 			local score = 0
 			score = grid:lambdaOnAllTiles(function(tile)
-				if not tile.cleared then
-					return false
+				if tile.cleared then
+					return true
 				end
 			end)
 			grid.gamestate.score.tiles = score
@@ -242,12 +242,14 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	grid:lambdaOnAllTiles(function(tile)
 		local tileOpacity = tile.decay
 		if tileOpacity > 1 then tileOpacity = 1 end
-		local scale = tileSize * tileOpacity
-		local x = config.pan.x + tileSize * (tile.position.x + 1) - ((tileSize + scale) / 2)
-		local y = config.pan.y + tileSize * (tile.position.y + 1) - ((tileSize + scale) / 2)
+		local scale = tileSize
 		if grid.gamestate.finished then
 			tileOpacity = 1
+		else
+			scale = scale * tileOpacity
 		end
+		local x = config.pan.x + tileSize * (tile.position.x + 1) - ((tileSize + scale) / 2)
+		local y = config.pan.y + tileSize * (tile.position.y + 1) - ((tileSize + scale) / 2)
 		if tile.cleared then
 			if tile.mine then
 				love.graphics.setColor(1, 0.25, 0.25, 1 * tileOpacity)
