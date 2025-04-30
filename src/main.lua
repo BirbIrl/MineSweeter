@@ -66,13 +66,13 @@ local config = {
 	zoom = 2,
 	pan = vector.new(0, 0),
 	pause = false,
-	fieldsize = vector.new(20, 25)
+	fieldsize = vector.new(2, 2)
 }
 local grid
 
 function love.keypressed(key)
 	if key == "r" then
-		grid = gridTemplate.new(vector.new(10, 10))
+		grid = gridTemplate.new(config.fieldsize)
 		config.pan = vector.new(0, 0)
 	end
 	if key == "p" then
@@ -81,40 +81,7 @@ function love.keypressed(key)
 end
 
 function love.load()
-	grid = gridTemplate.new(vector.new(10, 10))
-end
-
-local function printTileLabel(tile, x, y, size, tileOpacity)
-	local label = tile.label
-	local color = { 1, 1, 1, 1 * tileOpacity }
-	if label == 0 then
-		color = { 0, 0, 0, 0 }
-	elseif label == 1 then
-		color = { 0, 0, 1, 1 * tileOpacity }
-	elseif label == 2 then
-		color = { 0, 0.5, 0, 1 * tileOpacity }
-	elseif label == 3 then
-		color = { 1, 0, 0, 1 * tileOpacity }
-	elseif label == 4 then
-		color = { 0, 0, 0.5, 1 * tileOpacity }
-	elseif label == 5 then
-		color = { 0.5, 0, 0, 1 * tileOpacity }
-	elseif label == 6 then
-		color = { 0, 0.5, 0.5, 1 * tileOpacity }
-	elseif label == 7 then
-		color = { 0.5, 0, 0.5, 1 * tileOpacity }
-	elseif label == 8 then
-		color = { 0.5, 0.5, 0.5, 1 * tileOpacity }
-	end
-
-	if tile.flagged then
-		label = "F"
-		color = { 1, 1, 0, 1 * tileOpacity }
-	end
-
-	love.graphics.print({ color, label }, tileFont, config.pan.x + size * x + size / 4.5, config.pan.y + size * y, nil,
-		size / 100,
-		size / 100)
+	grid = gridTemplate.new(config.fieldsize)
 end
 
 local m1 = {
@@ -236,12 +203,48 @@ function love.update()
 	love.timer.sleep(0.015) --- limits the game to 60fps lol
 end
 
+local function printTileLabel(tile, x, y, tileSize, scale, tileOpacity)
+	local label = tile.label
+	local color = { 1, 1, 1, 1 * tileOpacity }
+	if label == 0 then
+		color = { 0, 0, 0, 0 }
+	elseif label == 1 then
+		color = { 0, 0, 1, 1 * tileOpacity }
+	elseif label == 2 then
+		color = { 0, 0.5, 0, 1 * tileOpacity }
+	elseif label == 3 then
+		color = { 1, 0, 0, 1 * tileOpacity }
+	elseif label == 4 then
+		color = { 0, 0, 0.5, 1 * tileOpacity }
+	elseif label == 5 then
+		color = { 0.5, 0, 0, 1 * tileOpacity }
+	elseif label == 6 then
+		color = { 0, 0.5, 0.5, 1 * tileOpacity }
+	elseif label == 7 then
+		color = { 0.5, 0, 0.5, 1 * tileOpacity }
+	elseif label == 8 then
+		color = { 0.5, 0.5, 0.5, 1 * tileOpacity }
+	end
+
+	if tile.flagged then
+		label = "F"
+		color = { 1, 1, 0, 1 * tileOpacity }
+	end
+
+	love.graphics.print({ color, label }, tileFont, x + scale / 4.5, y,
+		nil,
+		scale / 100,
+		scale / 100)
+end
+
 function love.draw() ---@diagnostic disable-line: duplicate-set-field
-	local size = globals.tilesize * config.zoom
+	local tileSize = globals.tilesize * config.zoom
 	grid:lambdaOnAllTiles(function(tile)
 		local tileOpacity = tile.decay
-		local x = tile.position.x
-		local y = tile.position.y
+		if tileOpacity > 1 then tileOpacity = 1 end
+		local scale = tileSize * tileOpacity
+		local x = config.pan.x + tileSize * (tile.position.x + 1) - ((tileSize + scale) / 2)
+		local y = config.pan.y + tileSize * (tile.position.y + 1) - ((tileSize + scale) / 2)
 		if grid.gamestate.finished then
 			tileOpacity = 1
 		end
@@ -251,22 +254,22 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 			else
 				love.graphics.setColor(0.75, 0.75, 0.75, 1 * tileOpacity)
 			end
-			love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
+			love.graphics.rectangle("fill", x, y, scale, scale)
 		elseif tile.label then
 			love.graphics.setColor(0.2, 0.2, 0.2, 1 * tileOpacity)
-			love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
+			love.graphics.rectangle("fill", x, y, scale,
+				scale)
 		elseif tile.mine ~= nil then -- TODO: delete the blue tint and replace with smth else
 			love.graphics.setColor(0.05, 0.1, 0.2, 1 * tileOpacity)
-			love.graphics.rectangle("fill", config.pan.x + size * x, config.pan.y + size * y, size, size)
+			love.graphics.rectangle("fill", x, y, scale, scale)
 		end
 		love.graphics.setColor(1, 1, 1, 1 * tileOpacity)
 		if not (tile.cleared and tile.mine) then
 			if not config.pause then
-				printTileLabel(tile, x, y, size, tileOpacity)
+				printTileLabel(tile, x, y, tileSize, scale, tileOpacity)
 			end
 		end
-
-		love.graphics.rectangle("line", config.pan.x + size * x, config.pan.y + size * y, size, size)
+		love.graphics.rectangle("line", x, y, scale, scale)
 	end)
 	local splash = ""
 	if grid.gamestate.finished then
@@ -297,9 +300,9 @@ end
 --[[
 TODO:
 # fix the web version so it doesn't stretch
-# add decay
 # scrolling with grid
 # walls of mines sometimes
 # add tile culling
+# test more of the performance stuff
 
 --]]
