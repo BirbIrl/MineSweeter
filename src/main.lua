@@ -7,7 +7,6 @@ local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
 
 
 love.graphics.setDefaultFilter("nearest")
-love.window.setMode(1920, 1080, { resizable = true })
 
 
 local gridTemplate = {
@@ -80,6 +79,9 @@ function love.keypressed(key)
 	end
 	if key == "f1" then
 		config.enableRendering = not config.enableRendering
+	end
+	if key == "f11" then
+		love.window.setFullscreen(not love.window.getFullscreen())
 	end
 end
 
@@ -305,7 +307,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		"MineSweeter alpha" ..
 		"\nFPS: " ..
 		love.timer.getFPS() ..
-		"\nLeft click to reveal a tile\nRight Click to mark a mine\nR to restart\nP to pause",
+		"\nLeft click to reveal a tile\nRight Click to mark a mine\nR to restart\nP to pause\nf1 to disable rendering (debug)\nf11 to fullscreen",
 		tileFont, 0, 0, 0, 1 / 5)
 end
 
