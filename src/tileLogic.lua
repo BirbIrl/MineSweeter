@@ -4,39 +4,6 @@ local vector = require("library.modules.vector")
 local tileTemplate = {
 	new = nil -- defined later
 }
-local function lambdaInRadius(grid, pos, func, radius, curve, includeSelf)
-	local hits = 0
-	radius = radius or 1
-	for x = -radius, radius, 1 do
-		for y = -radius, radius, 1 do
-			local tileRadius = math.sqrt(x ^ 2 + y ^ 2)
-			if not (curve and tileRadius > radius)
-				and (includeSelf or not (x == 0 and y == 0))
-				and grid[pos.x + x] then
-				if grid[pos.x + x][pos.y + y] then
-					if func(grid[pos.x + x][pos.y + y], tileRadius) == true then
-						hits = hits + 1
-					end
-				end
-			end
-		end
-	end
-	return hits
-end
-local function generateTilesInRadius(grid, pos, radius, curve)
-	local hits = 0
-	radius = radius or 1
-	for x = -radius, radius, 1 do
-		for y = -radius, radius, 1 do
-			if not (curve and x ^ 2 + y ^ 2 > radius ^ 2) then
-				if not grid[pos.x + x] then grid[pos.x + x] = {} end
-				if not grid[pos.x + x][pos.y + y] then
-					grid[pos.x + x][pos.y + y] = tileTemplate:new(grid, vector.new(pos.x + x, pos.y + y))
-				end
-			end
-		end
-	end
-end
 tileTemplate = {
 	new = function(self, parentGrid, position)
 		local tile =
@@ -56,6 +23,45 @@ tileTemplate = {
 			cleared = false,
 		}
 
+		function tile:lambdaInRadius(func, pos, radius, curve, includeSelf)
+			local hits = 0
+			pos = pos or self.pos
+			radius = radius or 1
+			for x = -radius, radius, 1 do
+				for y = -radius, radius, 1 do
+					local tileRadius = math.sqrt(x ^ 2 + y ^ 2)
+					local pos = self.position
+					local grid = self.parentGrid
+					if not (curve and tileRadius > radius)
+						and (includeSelf or not (x == 0 and y == 0))
+						and grid.tiles[pos.x + x] then
+						if grid.tiles[pos.x + x][pos.y + y] then
+							if func(grid.tiles[pos.x + x][pos.y + y], tileRadius) == true then
+								hits = hits + 1
+							end
+						end
+					end
+				end
+			end
+			return hits
+		end
+
+		function tile:generateTilesInRadius(pos, radius, curve)
+			pos = pos or self.pos
+			radius = radius or 1
+			for x = -radius, radius, 1 do
+				for y = -radius, radius, 1 do
+					grid = self.parentGrid
+					if not (curve and x ^ 2 + y ^ 2 > radius ^ 2) then
+						if not grid.tiles[pos.x + x] then grid.tiles[pos.x + x] = {} end
+						if not grid.tiles[pos.x + x][pos.y + y]
+							and not (grid.unloadedTiles[pos.x + x] and grid.unloadedTiles[pos.x + x][pos.y + y]) then
+							grid.tiles[pos.x + x][pos.y + y] = tileTemplate:new(grid, vector.new(pos.x + x, pos.y + y))
+						end
+					end
+				end
+			end
+		end
 
 		function tile:observe(chain)
 			if self.mine == nil then
@@ -76,48 +82,44 @@ tileTemplate = {
 
 		function tile:generateNew(x, y, isMine, grid)
 			grid = parentGrid or grid or {}
-			grid[x] = grid[x] or {}
-			grid[x][y] = tileTemplate:new()
+			grid.tiles[x] = grid.tiles[x] or {}
+			grid.tiles[x][y] = tileTemplate:new()
 		end
 
 		function tile:triggerInRadius(radius, curve, includeSelf, chain)
-			return lambdaInRadius(self.parentGrid, self.position, function(tile)
+			return self:lambdaInRadius(function(tile)
 				if not tile.cleared then
 					return tile:trigger(chain)
 				end
 				return false
-			end, radius, curve, includeSelf)
+			end, self.position, radius, curve, includeSelf)
 		end
 
 		function tile:observeInRadius(radius, curve, includeSelf, chain)
-			return lambdaInRadius(self.parentGrid, self.position, function(tile)
+			return self:lambdaInRadius(function(tile)
 				return tile:observe(chain)
-			end, radius, curve, includeSelf)
+			end, self.position, radius, curve, includeSelf)
 		end
 
 		function tile:startDecayInRadius(radius, curve, includeSelf, strength, falloff)
 			strength = strength or 0
 			falloff = falloff or 1
-			return lambdaInRadius(self.parentGrid, self.position, function(tile, tileRadius)
+			return self:lambdaInRadius(function(tile, tileRadius)
 				if tile.decay > 0 then
 					tile.decaying = true
 					tile.decay = tile.decay - strength / (tileRadius * falloff)
 				end
-			end, radius, curve, includeSelf)
-		end
-
-		function tile:generateInRadius(radius, curve)
-			generateTilesInRadius(self.parentGrid, self.position, radius, curve)
+			end, self.position, radius, curve, includeSelf)
 		end
 
 		function tile:countInRadiusFlagsOrRevealedBombs(radius, curve)
-			return lambdaInRadius(self.parentGrid, self.position, function(tile)
+			return self:lambdaInRadius(function(tile)
 				return (tile.flagged or (tile.cleared and tile.mine))
-			end, radius, curve)
+			end, self.position, radius, curve)
 		end
 
 		function tile:getLabel(chain)
-			self.label = lambdaInRadius(self.parentGrid, self.position, function(tile)
+			self.label = self:lambdaInRadius(function(tile)
 				if tile.mine then
 					return true
 				else
@@ -132,9 +134,14 @@ tileTemplate = {
 		function tile:tick()
 			if tile.decaying and tile.decay > 0 then
 				tile.decay = tile.decay - tile.decayrate
-				if tile.decay < 0 then
-					tile.decay = 0
-				end
+			end
+			if tile.decay < 0 then
+				tile.decay = 0
+				tile.loaded = false
+				local unloadedGrid = self.parentGrid.unloadedTiles
+				unloadedGrid[self.position.x] = unloadedGrid[self.position.x] or {}
+				unloadedGrid[self.position.x][self.position.y] = self
+				self.parentGrid.tiles[self.position.x][self.position.y] = nil
 			end
 			if tile.halflife and tile.decay < tile.halflife then
 				tile:startDecayInRadius(1, true)
@@ -154,11 +161,10 @@ tileTemplate = {
 						self.decaying = true
 					end
 					if self.mine then
-						print("Boom!!")
-						self:startDecayInRadius(3, true, false, 1)
+						self:startDecayInRadius(4, true, false, 1, 0.5)
 					else
 						self.chain = chain
-						self:generateInRadius(10, true)
+						self:generateTilesInRadius(self.position, 10, true)
 						self:observeInRadius(1, false, true, chain + 1)
 						self:getLabel(chain)
 					end

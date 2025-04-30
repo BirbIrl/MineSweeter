@@ -10,6 +10,48 @@ local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
 love.graphics.setDefaultFilter("nearest")
 love.window.setMode(1920, 1080, { resizable = true })
 
+
+local gridTemplate = {
+	new = function(fieldsize)
+		local grid = {}
+		grid.gamestate = {
+			forceClick = true,
+			freebies = love.math.random(20, 25),
+			finished = false,
+		}
+		grid.gamestate.score = {
+			tiles = 0
+		}
+		grid.tiles = {}
+		grid.unloadedTiles = {}
+		function grid:addTile(tile, pos)
+			self.tiles = self.tiles or {}
+			self.tiles[pos.x] = self.tiles[pos.x] or {}
+			self.tiles[pos.x][pos.y] = tile
+		end
+
+		function grid:generateStarterField(fieldsize)
+			for x = 1, fieldsize.x, 1 do
+				for y = 1, fieldsize.y, 1 do
+					local pos = vector.new(x, y)
+					self:addTile(Tile:new(grid, pos), pos)
+				end
+			end
+		end
+
+		function grid:lambdaOnAllTiles()
+		end
+
+		if fieldsize then
+			grid:generateStarterField(fieldsize)
+		end
+
+		return grid
+	end
+
+}
+
+
 local config = {
 	zoom = 2,
 	pan = vector.new(0, 0),
@@ -18,28 +60,15 @@ local config = {
 }
 local grid
 local function addTile(grid, tile, x, y)
-	grid = grid or {}
-	grid[x] = grid[x] or {}
-	grid[x][y] = tile
+	grid.tiles = grid.tiles or {}
+	grid.tiles[x] = grid.tiles[x] or {}
+	grid.tiles[x][y] = tile
 end
 
 function love.keypressed(key)
 	if key == "r" then
-		grid = {
-			gamestate = {
-				forceClick = true,
-				freebies = love.math.random(20, 25),
-				finished = false,
-				score = {
-					tiles = 0
-				},
-			}
-		}
-		for x = 1, config.fieldsize.x, 1 do
-			for y = 1, config.fieldsize.y, 1 do
-				addTile(grid, Tile:new(grid, vector.new(x, y)), x, y)
-			end
-		end
+		grid = gridTemplate.new(vector.new(10, 10))
+		config.pan = vector.new(0, 0)
 	end
 	if key == "p" then
 		config.pause = not config.pause
@@ -47,21 +76,7 @@ function love.keypressed(key)
 end
 
 function love.load()
-	grid = {
-		gamestate = {
-			forceClick = true,
-			freebies = love.math.random(15, 22),
-			finished = false,
-			score = {
-				tiles = 0
-			},
-		}
-	}
-	for x = 1, config.fieldsize.x, 1 do
-		for y = 1, config.fieldsize.y, 1 do
-			addTile(grid, Tile:new(grid, vector.new(x, y)), x, y)
-		end
-	end
+	grid = gridTemplate.new(vector.new(10, 10))
 end
 
 local function printTileLabel(tile, x, y, size, tileOpacity)
@@ -118,12 +133,12 @@ local function triggerTile(grid, mousePos, mouseButton)
 		y = math.floor(
 			(mousePos.y - config.pan.y) / size
 		)
-		if grid[x] and grid[x][y] then
+		if grid.tiles[x] and grid.tiles[x][y] then
 			if mouseButton == 1 then
-				grid[x][y]:trigger(nil, grid.gamestate.forceClick)
+				grid.tiles[x][y]:trigger(nil, grid.gamestate.forceClick)
 				grid.gamestate.forceClick = false
 			elseif mouseButton == 2 then
-				grid[x][y]:flag()
+				grid.tiles[x][y]:flag()
 			elseif mouseButton == 3 then
 			else
 				error("need to provide mouse button for triggerTile")
@@ -135,7 +150,7 @@ end
 function love.update()
 	if not config.pause then
 		local aliveTiles = 0
-		for x, column in pairs(grid) do
+		for x, column in pairs(grid.tiles) do
 			if type(x) == "number" then
 				for y, tile in pairs(column) do
 					if not grid.gamestate.finished then
@@ -151,7 +166,7 @@ function love.update()
 			print(aliveTiles)
 			grid.gamestate.finished = true
 			local score = 0
-			for x, column in pairs(grid) do
+			for x, column in pairs(grid.tiles) do
 				if type(x) == "number" then
 					for y, tile in pairs(column) do
 						if tile.cleared then
@@ -221,7 +236,7 @@ end
 
 function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	local size = globals.tilesize * config.zoom
-	for x, row in pairs(grid) do
+	for x, row in pairs(grid.tiles) do
 		if type(x) == "number" then
 			for y, tile in pairs(row) do
 				local tileOpacity = tile.decay
@@ -285,5 +300,6 @@ TODO:
 # add decay
 # scrolling with grid
 # walls of mines sometimes
+# add tile culling
 
 --]]
