@@ -65,6 +65,7 @@ local config = {
 	zoom = 2,
 	pan = vector.new(0, 0),
 	pause = false,
+	enableRendering = true,
 	fieldsize = vector.new(10, 10)
 }
 local grid
@@ -76,6 +77,9 @@ function love.keypressed(key)
 	end
 	if key == "p" then
 		config.pause = not config.pause
+	end
+	if key == "f1" then
+		config.enableRendering = not config.enableRendering
 	end
 end
 
@@ -117,89 +121,99 @@ local function triggerTile(grid, mousePos, mouseButton)
 		end
 	end
 end
-
-function love.update()
-	if not config.pause then
-		local aliveTiles = 0
-		grid:lambdaOnAllTiles(function(tile)
-			if not grid.gamestate.finished then
-				tile:tick()
-			end
-			if tile.mine ~= nil and tile.decay > 0 then
-				aliveTiles = aliveTiles + 1
-			end
-		end)
-		if aliveTiles == 0 and not grid.gamestate.forceClick and not grid.gamestate.finished then
-			print(aliveTiles)
-			grid.gamestate.finished = true
+local tickTimer = 0
+local ticksThisSecond = 0
+function love.update(dt)
+	tickTimer = tickTimer + dt
+	if tickTimer > 0.045 then
+		tickTimer = tickTimer - 0.045
+		ticksThisSecond = ticksThisSecond + 1
+		if not config.pause then
+			local aliveTiles = 0
 			grid:lambdaOnAllTiles(function(tile)
-				tile.parentGrid.tiles[tile.position.x] = tile.parentGrid.tiles[tile.position.x] or {}
-				tile.parentGrid.tiles[tile.position.x][tile.position.y] = tile
-				tile.parentGrid.unloadedTiles[tile.position.x][tile.position.y] = nil
-			end, grid.unloadedTiles)
-			local score = 0
-			score = grid:lambdaOnAllTiles(function(tile)
-				if tile.cleared then
-					return true
+				if not grid.gamestate.finished then
+					tile:tick()
+				end
+				if tile.mine ~= nil and tile.decay > 0 then
+					aliveTiles = aliveTiles + 1
 				end
 			end)
-			grid.gamestate.score.tiles = score
-			print(grid.gamestate.score.tiles)
-		end
-
-		if love.mouse.isDown(1) then
-			local newPos = vector.new(love.mouse.getPosition())
-			if m1.lastMousePos then
-				config.pan.x = config.pan.x + (newPos.x - m1.lastMousePos.x)
-				config.pan.y = config.pan.y + (newPos.y - m1.lastMousePos.y)
-			end
-			m1.startingMousePos = m1.startingMousePos or newPos
-			m1.lastMousePos = newPos
-		else
-			if m1.lastMousePos or m1.startingMousePos then
-				if m1.lastMousePos:dist(m1.startingMousePos) <= 10 then
-					triggerTile(grid, m1.lastMousePos, 1)
-				end
-				m1.lastMousePos = nil
-				m1.startingMousePos = nil
-			end
-		end
-		if love.mouse.isDown(2) then
-			local newPos = vector.new(love.mouse.getPosition())
-			m2.startingMousePos = m2.startingMousePos or newPos
-			if m2.lastMousePos then
-				config.pan.x = config.pan.x + (newPos.x - m2.lastMousePos.x)
-				config.pan.y = config.pan.y + (newPos.y - m2.lastMousePos.y)
-			end
-			m2.lastMousePos = newPos
-		else
-			if m2.lastMousePos or m2.startingMousePos then
-				if m2.lastMousePos:dist(m2.startingMousePos) <= 10 then
-					triggerTile(grid, m2.lastMousePos, 2)
-				end
-				m2.lastMousePos = nil
-				m2.startingMousePos = nil
-			end
-		end
-		if love.mouse.isDown(3) then
-			local newPos = vector.new(love.mouse.getPosition())
-			m3.startingMousePos = m3.startingMousePos or newPos
-			if m3.lastMousePos then
-				config.pan.x = config.pan.x + (newPos.x - m3.lastMousePos.x)
-				config.pan.y = config.pan.y + (newPos.y - m3.lastMousePos.y)
-			end
-			m3.lastMousePos = newPos
-		else
-			if m3.lastMousePos or m3.startingMousePos then
-				if m3.lastMousePos:dist(m3.startingMousePos) <= 10 then
-					triggerTile(grid, m3.lastMousePos, 3)
-				end
-				m3.lastMousePos = nil
-				m3.startingMousePos = nil
+			if aliveTiles == 0 and not grid.gamestate.forceClick and not grid.gamestate.finished then
+				print(aliveTiles)
+				grid.gamestate.finished = true
+				grid:lambdaOnAllTiles(function(tile)
+					tile.parentGrid.tiles[tile.position.x] = tile.parentGrid.tiles[tile.position.x] or {}
+					tile.parentGrid.tiles[tile.position.x][tile.position.y] = tile
+					tile.parentGrid.unloadedTiles[tile.position.x][tile.position.y] = nil
+				end, grid.unloadedTiles)
+				-- this can be optimised but i cba
+				local score = 0
+				score = grid:lambdaOnAllTiles(function(tile)
+					if tile.cleared then
+						return true
+					end
+				end)
+				grid.gamestate.score.tiles = score
+				print(grid.gamestate.score.tiles)
 			end
 		end
 	end
-	love.timer.sleep(0.015) --- limits the game to 60fps lol
+
+	if love.mouse.isDown(1) then
+		local newPos = vector.new(love.mouse.getPosition())
+		if m1.lastMousePos then
+			config.pan.x = config.pan.x + (newPos.x - m1.lastMousePos.x)
+			config.pan.y = config.pan.y + (newPos.y - m1.lastMousePos.y)
+		end
+		m1.startingMousePos = m1.startingMousePos or newPos
+		m1.lastMousePos = newPos
+	else
+		if m1.lastMousePos or m1.startingMousePos then
+			if m1.lastMousePos:dist(m1.startingMousePos) <= 10 then
+				if not config.pause then
+					triggerTile(grid, m1.lastMousePos, 1)
+				end
+			end
+			m1.lastMousePos = nil
+			m1.startingMousePos = nil
+		end
+	end
+	if love.mouse.isDown(2) then
+		local newPos = vector.new(love.mouse.getPosition())
+		m2.startingMousePos = m2.startingMousePos or newPos
+		if m2.lastMousePos then
+			config.pan.x = config.pan.x + (newPos.x - m2.lastMousePos.x)
+			config.pan.y = config.pan.y + (newPos.y - m2.lastMousePos.y)
+		end
+		m2.lastMousePos = newPos
+	else
+		if m2.lastMousePos or m2.startingMousePos then
+			if m2.lastMousePos:dist(m2.startingMousePos) <= 10 then
+				if not config.pause then
+					triggerTile(grid, m2.lastMousePos, 2)
+				end
+			end
+			m2.lastMousePos = nil
+			m2.startingMousePos = nil
+		end
+	end
+	if love.mouse.isDown(3) then
+		local newPos = vector.new(love.mouse.getPosition())
+		m3.startingMousePos = m3.startingMousePos or newPos
+		if m3.lastMousePos then
+			config.pan.x = config.pan.x + (newPos.x - m3.lastMousePos.x)
+			config.pan.y = config.pan.y + (newPos.y - m3.lastMousePos.y)
+		end
+		m3.lastMousePos = newPos
+	else
+		if m3.lastMousePos or m3.startingMousePos then
+			if m3.lastMousePos:dist(m3.startingMousePos) <= 10 then
+				triggerTile(grid, m3.lastMousePos, 3)
+			end
+			m3.lastMousePos = nil
+			m3.startingMousePos = nil
+		end
+	end
 end
 
 local function printTileLabel(tile, x, y, tileSize, scale, tileOpacity)
@@ -238,40 +252,44 @@ end
 
 function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	local tileSize = globals.tilesize * config.zoom
-	grid:lambdaOnAllTiles(function(tile)
-		local tileOpacity = tile.decay
-		if tileOpacity > 1 then tileOpacity = 1 end
-		local scale = tileSize
-		if grid.gamestate.finished then
-			tileOpacity = 1
-		else
-			scale = scale * tileOpacity
-		end
-		local x = config.pan.x + tileSize * (tile.position.x + 1) - ((tileSize + scale) / 2)
-		local y = config.pan.y + tileSize * (tile.position.y + 1) - ((tileSize + scale) / 2)
-		if tile.cleared then
-			if tile.mine then
-				love.graphics.setColor(1, 0.25, 0.25, 1 * tileOpacity)
+	if config.enableRendering then
+		grid:lambdaOnAllTiles(function(tile)
+			local tileOpacity = tile.decay
+			if tileOpacity > 1 then tileOpacity = 1 end
+			local scale = tileSize
+			if grid.gamestate.finished then
+				tileOpacity = 1
 			else
-				love.graphics.setColor(0.75, 0.75, 0.75, 1 * tileOpacity)
+				scale = scale * tileOpacity
 			end
-			love.graphics.rectangle("fill", x, y, scale, scale)
-		elseif tile.label then
-			love.graphics.setColor(0.2, 0.2, 0.2, 1 * tileOpacity)
-			love.graphics.rectangle("fill", x, y, scale,
-				scale)
-		elseif tile.mine ~= nil then -- TODO: delete the blue tint and replace with smth else
-			love.graphics.setColor(0.05, 0.1, 0.2, 1 * tileOpacity)
-			love.graphics.rectangle("fill", x, y, scale, scale)
-		end
-		love.graphics.setColor(1, 1, 1, 1 * tileOpacity)
-		if not (tile.cleared and tile.mine) then
-			if not config.pause then
-				printTileLabel(tile, x, y, tileSize, scale, tileOpacity)
+			local x = config.pan.x + tileSize * (tile.position.x + 1) - ((tileSize + scale) / 2)
+			local y = config.pan.y + tileSize * (tile.position.y + 1) - ((tileSize + scale) / 2)
+			if x > -scale and y > -scale and x < love.graphics.getWidth() and y < love.graphics.getHeight() then
+				if tile.cleared then
+					if tile.mine then
+						love.graphics.setColor(1, 0.25, 0.25, 1 * tileOpacity)
+					else
+						love.graphics.setColor(0.75, 0.75, 0.75, 1 * tileOpacity)
+					end
+					love.graphics.rectangle("fill", x, y, scale, scale)
+				elseif tile.label then
+					love.graphics.setColor(0.2, 0.2, 0.2, 1 * tileOpacity)
+					love.graphics.rectangle("fill", x, y, scale,
+						scale)
+				elseif tile.mine ~= nil then -- TODO: delete the blue tint and replace with smth else
+					love.graphics.setColor(0.05, 0.1, 0.2, 1 * tileOpacity)
+					love.graphics.rectangle("fill", x, y, scale, scale)
+				end
+				love.graphics.setColor(1, 1, 1, 1 * tileOpacity)
+				if not (tile.cleared and tile.mine) then
+					if not config.pause then
+						printTileLabel(tile, x, y, tileSize, scale, tileOpacity)
+					end
+				end
+				love.graphics.rectangle("line", x, y, scale, scale)
 			end
-		end
-		love.graphics.rectangle("line", x, y, scale, scale)
-	end)
+		end)
+	end
 	local splash = ""
 	if grid.gamestate.finished then
 		splash = "Death :(\nScore: " .. grid.gamestate.score.tiles
@@ -279,6 +297,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		splash = "Game Paused"
 	end
 	local textScale = love.graphics.getWidth() * 0.5 / 1080
+	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.printf(splash, tileFont, 0,
 		love.graphics.getHeight() * 0.05, love.graphics.getWidth() / textScale,
 		"center", 0, textScale)
@@ -301,9 +320,7 @@ end
 --[[
 TODO:
 # fix the web version so it doesn't stretch
-# scrolling with grid
+# scrolling with grid expanding
 # walls of mines sometimes
-# add tile culling
-# test more of the performance stuff
 
 --]]

@@ -18,7 +18,7 @@ tileTemplate = {
 			decay = 1 + (love.math.random() * 0.5)
 			,
 			decaying = false,
-			decayrate = 0.005,
+			decayrate = 0.015,
 			halflife = 0.5,
 			cleared = false,
 		}
@@ -164,7 +164,7 @@ tileTemplate = {
 						self:startDecayInRadius(4, true, false, 1, 0.5)
 					else
 						self.chain = chain
-						self:generateTilesInRadius(self.position, 10, true)
+						self:generateTilesInRadius(self.position, 5, true)
 						self:observeInRadius(1, false, true, chain + 1)
 						self:getLabel(chain)
 					end
