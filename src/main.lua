@@ -1,14 +1,28 @@
 ---@diagnostic disable: redefined-local
+
 local serpent = require("library.modules.serpent")
 local bath = require("library.modules.bath")
 local vector = require("library.modules.vector")
+local tween = require("library.modules.tween")
 local Tile = require("tileLogic")
 local globals = require("globals")
 local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
 
+local curve = love.math.newBezierCurve(1, 1, 2, 2, 1, 3)
+print(curve:evaluate(0.5))
+local newTween = tween.new(1, { scale = { 0, 0 } }, { scale = { 1, 1 } }, "inOutSine")
+newTween:set(0.75)
+print(newTween.subject.scale[1])
 
 love.graphics.setDefaultFilter("nearest")
 
+local config = {
+	zoom = 2,
+	pan = vector.new(0, 0),
+	pause = false,
+	enableRendering = true,
+	fieldsize = vector.new(5, 5)
+}
 
 local gridTemplate = {
 	new = function(fieldsize)
@@ -30,12 +44,14 @@ local gridTemplate = {
 		end
 
 		function grid:generateStarterField(fieldsize)
-			for x = 1, fieldsize.x, 1 do
-				for y = 1, fieldsize.y, 1 do
+			for x = -math.floor(fieldsize.x / 2), fieldsize.x / 2, 1 do
+				for y = -math.floor(fieldsize.y / 2), fieldsize.y / 2, 1 do
 					local pos = vector.new(x, y)
 					self:addTile(Tile:new(grid, pos), pos)
 				end
 			end
+			config.pan.x = love.graphics.getWidth() / 2
+			config.pan.y = love.graphics.getHeight() / 2
 		end
 
 		function grid:lambdaOnAllTiles(fun, tileGrid)
@@ -61,19 +77,12 @@ local gridTemplate = {
 }
 
 
-local config = {
-	zoom = 2,
-	pan = vector.new(0, 0),
-	pause = false,
-	enableRendering = true,
-	fieldsize = vector.new(10, 10)
-}
+
 local grid
 
 function love.keypressed(key)
 	if key == "r" then
 		grid = gridTemplate.new(config.fieldsize)
-		config.pan = vector.new(0, 0)
 	end
 	if key == "p" then
 		config.pause = not config.pause
@@ -105,11 +114,11 @@ local m3 = {
 local function triggerTile(grid, mousePos, mouseButton)
 	local size = globals.tilesize * config.zoom
 	if not grid.gamestate.finished then
-		x = math.floor(
-			(mousePos.x - config.pan.x) / size
+		local x = math.floor(
+			(mousePos.x - config.pan.x) / (size * globals.tileGap)
 		)
-		y = math.floor(
-			(mousePos.y - config.pan.y) / size
+		local y = math.floor(
+			(mousePos.y - config.pan.y) / (size * globals.tileGap)
 		)
 		if grid.tiles[x] and grid.tiles[x][y] then
 			if mouseButton == 1 then
@@ -126,16 +135,17 @@ local function triggerTile(grid, mousePos, mouseButton)
 end
 local tickTimer = 0
 local ticksThisSecond = 0
+local timer = 0
 function love.update(dt)
 	tickTimer = tickTimer + dt
-	if tickTimer > 0.045 then
-		tickTimer = tickTimer - 0.045
-		ticksThisSecond = ticksThisSecond + 1
-		if not config.pause then
+	if not config.pause then
+		if tickTimer > 0.045 then
+			tickTimer = tickTimer - 0.045
+			ticksThisSecond = ticksThisSecond + 1
 			local aliveTiles = 0
 			grid:lambdaOnAllTiles(function(tile)
 				if not grid.gamestate.finished then
-					tile:tick()
+					tile:tick(dt)
 				end
 				if tile.mine ~= nil and tile.decay > 0 then
 					aliveTiles = aliveTiles + 1
@@ -160,6 +170,10 @@ function love.update(dt)
 				print(grid.gamestate.score.tiles)
 			end
 		end
+
+		grid:lambdaOnAllTiles(function(tile)
+			tile:updateAnim(dt)
+		end)
 	end
 
 	if love.mouse.isDown(1) then
@@ -265,8 +279,16 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 			else
 				scale = scale * tileOpacity
 			end
-			local x = config.pan.x + tileSize * (tile.position.x + 1) - ((tileSize + scale) / 2)
-			local y = config.pan.y + tileSize * (tile.position.y + 1) - ((tileSize + scale) / 2)
+			for _, anim in pairs(tile.anims) do
+				for trait, values in pairs(anim.subject) do
+					if trait == "scale" then
+						scale = scale * values[1]
+					end
+				end
+			end
+			local x = config.pan.x + (tileSize * globals.tileGap) * (tile.position.x + 1) -
+				((tileSize + scale) / 2)
+			local y = config.pan.y + (tileSize * globals.tileGap) * (tile.position.y + 1) - ((tileSize + scale) / 2)
 			if x > -scale and y > -scale and x < love.graphics.getWidth() and y < love.graphics.getHeight() then
 				if tile.cleared then
 					if tile.mine then
@@ -313,7 +335,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 end
 
 function love.wheelmoved(x, y)
-	y = bath.sign(y) -- the web version seems to go from -2 to 2 which breaks everythign
+	y = bath.sign(y) -- the web version seems to go from -2 to 2 sometimes which breaks everything
 	local mouseX, mouseY = love.mouse.getPosition()
 	local oldZoom = config.zoom
 	config.zoom = config.zoom + (config.zoom * y * 0.5)
@@ -325,5 +347,4 @@ end
 TODO:
 # scrolling with grid expanding
 # walls of mines sometimes
-
 --]]

@@ -1,9 +1,48 @@
 ---@diagnostic disable: redefined-local
 local globals = require("globals")
 local vector = require("library.modules.vector")
+local tween = require("library.modules.tween")
+local serpent = require("library.modules.serpent")
 local tileTemplate = {
 	new = nil -- defined later
 }
+function shallow_copy(t)
+	local t2 = {}
+	for k, v in pairs(t) do
+		t2[k] = v
+	end
+	return t2
+end
+
+local anims = {
+	popScale = function(size, duration, delay)
+		delay = delay or 0
+		local twn = tween.new(duration, { scale = { 1, 1 } }, { scale = { size, size } }, "inOutSine")
+		twn.hasLooped = false
+		twn.delay = delay
+		print(twn.clock)
+		function twn:tick(dt)
+			print(self.clock)
+			if delay > 0 then
+				delay = delay - dt
+			elseif twn:update(dt) then
+				if not self.hasLooped then
+					local tmp = self.initial
+					self.initial = self.target
+					self.target = tmp
+					self:reset()
+					self.hasLooped = true
+				else
+					self = nil
+				end
+			end
+		end
+
+		return twn
+	end
+}
+
+
 tileTemplate = {
 	new = function(self, parentGrid, position)
 		local tile =
@@ -15,8 +54,8 @@ tileTemplate = {
 			flagged = false,
 			position = position,
 			parentGrid = parentGrid,
-			decay = 1 + (love.math.random() * 0.5)
-			,
+			decay = 1 + (love.math.random() * 0.5),
+			anims = {},
 			decaying = false,
 			decayrate = 0.015,
 			halflife = 0.5,
@@ -65,6 +104,7 @@ tileTemplate = {
 
 		function tile:observe(chain)
 			if self.mine == nil then
+				self.anims[#self.anims + 1] = anims.popScale(1.2, 0.25, chain / 10)
 				if not self.chain then self.chain = chain end
 				if self.parentGrid.gamestate.freebies > 0 then
 					self.mine = false
@@ -146,6 +186,12 @@ tileTemplate = {
 			if tile.halflife and tile.decay < tile.halflife then
 				tile:startDecayInRadius(1, true)
 				tile.halflife = false
+			end
+		end
+
+		function tile:updateAnim(dt)
+			for _, anim in pairs(self.anims) do
+				anim:tick(dt)
 			end
 		end
 
