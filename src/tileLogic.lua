@@ -235,7 +235,13 @@ tileTemplate = {
 				chainSource = self.position
 				self.anims[#self.anims + 1] = anims.popScale(1.15, 0.15)
 			end
-			if not self.flagged and self.decay > 0 then
+			if self.flagged then
+				if player then
+					sounds.fail:clone():play()
+				end
+				return false
+			end
+			if self.decay > 0 then
 				if self.cleared == false then
 					if self.mine == nil and not force then
 						if player then
