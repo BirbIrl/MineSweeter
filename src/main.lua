@@ -65,7 +65,7 @@ local gridTemplate = {
 
 		function grid:tick()
 			self.gamestate.decayRate = globals.defaultDecayRate * math.sqrt(self.gamestate.score.tiles)
-			print(self.gamestate.decayRate / globals.defaultDecayRate)
+			--print(self.gamestate.decayRate / globals.defaultDecayRate)
 		end
 
 		if fieldsize then
@@ -358,6 +358,8 @@ end
 
 --[[
 TODO:
+# new anim system that can be toggled, so that highlight for macro is on hover not on click
+# non-void mode
+# proper text display system
 # scrolling with grid expanding
-# walls of mines sometimes
 --]]

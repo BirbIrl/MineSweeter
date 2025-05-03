@@ -170,6 +170,14 @@ tileTemplate = {
 			end, self.position, radius, curve, includeSelf)
 		end
 
+		function tile:highlightForMacroInRadius(radius, curve)
+			return self:lambdaInRadius(function(tile)
+				if not tile.cleared then
+					tile.anims[#tile.anims + 1] = anims.popScale(1.15, 0.15)
+				end
+			end, self.position, radius, curve)
+		end
+
 		function tile:observeInRadius(radius, curve, includeSelf, chainSource)
 			return self:lambdaInRadius(function(tile)
 				return tile:observe(chainSource)
@@ -277,6 +285,7 @@ tileTemplate = {
 							sounds.fail:clone():play()
 						end
 					elseif player then
+						self:highlightForMacroInRadius()
 						sounds.fail:clone():play()
 					end
 				end
