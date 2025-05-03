@@ -1,5 +1,6 @@
 ---@diagnostic disable: redefined-local
 local serpent = require("library.modules.serpent")
+local bath = require("library.modules.bath")
 local vector = require("library.modules.vector")
 local Tile = require("tileLogic")
 local globals = require("globals")
@@ -312,6 +313,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 end
 
 function love.wheelmoved(x, y)
+	y = bath.sign(y) -- the web version seems to go from -2 to 2 which breaks everythign
 	local mouseX, mouseY = love.mouse.getPosition()
 	local oldZoom = config.zoom
 	config.zoom = config.zoom + (config.zoom * y * 0.5)
@@ -321,7 +323,6 @@ end
 
 --[[
 TODO:
-# fix the web version so it doesn't stretch
 # scrolling with grid expanding
 # walls of mines sometimes
 
