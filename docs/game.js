@@ -333,6 +333,6 @@ Module.expectedDataFileDownloads++;
         }
     }
 
-    loadPackage({"files": [{"filename": "/game.love", "start": 0, "end": 2123695}], "remote_package_size": 2123695, "package_uuid": "275143ba-7275-4a6d-a766-7eab1cb08b01"});
+    loadPackage({"files": [{"filename": "/game.love", "start": 0, "end": 2123699}], "remote_package_size": 2123699, "package_uuid": "015500ed-b2c8-4634-b2d7-164507b96711"});
 
 })();

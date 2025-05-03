@@ -319,7 +319,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		(love.graphics.getHeight() - (textScale * 200)) * 0.75, love.graphics.getWidth() / textScale,
 		"center", 0, textScale)
 	love.graphics.print(
-		"MineSweeter alpha" ..
+		"MineSweeter alpha v1.0" ..
 		"\nFPS: " ..
 		love.timer.getFPS() ..
 		"\nLeft click to reveal a tile\nRight Click to mark a mine\nR to restart\nP to pause\nf1 to disable rendering (debug)\nf11 to fullscreen",
