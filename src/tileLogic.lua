@@ -20,9 +20,7 @@ local anims = {
 		local twn = tween.new(duration, { scale = { 1, 1 } }, { scale = { size, size } }, "inOutSine")
 		twn.hasLooped = false
 		twn.delay = delay
-		print(twn.clock)
 		function twn:tick(dt)
-			print(self.clock)
 			if delay > 0 then
 				delay = delay - dt
 			elseif twn:update(dt) then
@@ -50,14 +48,12 @@ tileTemplate = {
 			size = globals.tilesize,
 			label = nil,
 			mine = nil,
-			chain = nil,
 			flagged = false,
 			position = position,
 			parentGrid = parentGrid,
 			decay = 1 + (love.math.random() * 0.5),
 			anims = {},
 			decaying = false,
-			decayrate = 0.015,
 			halflife = 0.5,
 			cleared = false,
 		}
@@ -102,14 +98,18 @@ tileTemplate = {
 			end
 		end
 
-		function tile:observe(chain)
+		function tile:observe(chainSource)
 			if self.mine == nil then
-				self.anims[#self.anims + 1] = anims.popScale(1.2, 0.25, chain / 10)
-				if not self.chain then self.chain = chain end
+				local chainPenalty = 1
+				if chainSource then
+					chainPenalty = math.sqrt(chainSource:dist(self.position))
+				end
+				self.anims[#self.anims + 1] = anims.popScale(1.2, 0.25, chainPenalty / 10)
 				if self.parentGrid.gamestate.freebies > 0 then
 					self.mine = false
 					self.parentGrid.gamestate.freebies = self.parentGrid.gamestate.freebies - 1
-				elseif love.math.random() <= globals.mineChance * self.chain then
+				elseif love.math.random() <= globals.mineChance * chainPenalty
+				then
 					self.mine = true
 				else
 					self.mine = false
@@ -126,18 +126,18 @@ tileTemplate = {
 			grid.tiles[x][y] = tileTemplate:new()
 		end
 
-		function tile:triggerInRadius(radius, curve, includeSelf, chain)
+		function tile:triggerInRadius(radius, curve, includeSelf, chainSource)
 			return self:lambdaInRadius(function(tile)
 				if not tile.cleared then
-					return tile:trigger(chain)
+					return tile:trigger(chainSource)
 				end
 				return false
 			end, self.position, radius, curve, includeSelf)
 		end
 
-		function tile:observeInRadius(radius, curve, includeSelf, chain)
+		function tile:observeInRadius(radius, curve, includeSelf, chainSource)
 			return self:lambdaInRadius(function(tile)
-				return tile:observe(chain)
+				return tile:observe(chainSource)
 			end, self.position, radius, curve, includeSelf)
 		end
 
@@ -158,7 +158,7 @@ tileTemplate = {
 			end, self.position, radius, curve)
 		end
 
-		function tile:getLabel(chain)
+		function tile:getLabel(chainSource)
 			self.label = self:lambdaInRadius(function(tile)
 				if tile.mine then
 					return true
@@ -167,13 +167,13 @@ tileTemplate = {
 				end
 			end)
 			if self.label == 0 then
-				self:triggerInRadius(1, false, false, chain + 1)
+				self:triggerInRadius(1, false, false, chainSource)
 			end
 		end
 
 		function tile:tick()
 			if tile.decaying and tile.decay > 0 then
-				tile.decay = tile.decay - tile.decayrate
+				tile.decay = tile.decay - self.parentGrid.gamestate.decayRate
 			end
 			if tile.decay < 0 then
 				tile.decay = 0
@@ -195,8 +195,8 @@ tileTemplate = {
 			end
 		end
 
-		function tile:trigger(chain, force)
-			chain = chain or 1
+		function tile:trigger(chainSource, force)
+			chainSource = chainSource or self.position
 			if not self.flagged and self.decay > 0 then
 				if self.cleared == false then
 					if self.mine == nil and not force then
@@ -209,14 +209,17 @@ tileTemplate = {
 					if self.mine then
 						self:startDecayInRadius(4, true, false, 1, 0.5)
 					else
-						self.chain = chain
 						self:generateTilesInRadius(self.position, 5, true)
-						self:observeInRadius(1, false, true, chain + 1)
-						self:getLabel(chain)
+						self:observeInRadius(1, false, true, chainSource)
+						self:getLabel(chainSource)
 					end
+					self.parentGrid.gamestate.score.tiles = self.parentGrid.gamestate.score.tiles + 1
 				else
 					if self.label == self:countInRadiusFlagsOrRevealedBombs() then
-						self:triggerInRadius(1, false, true, chain)
+						if self.parentGrid.gamestate.freebies > 0 then
+							chainSource = self.position
+						end
+						self:triggerInRadius(1, false, true, chainSource)
 					end
 				end
 			end

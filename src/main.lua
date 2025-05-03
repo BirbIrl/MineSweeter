@@ -8,12 +8,6 @@ local Tile = require("tileLogic")
 local globals = require("globals")
 local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
 
-local curve = love.math.newBezierCurve(1, 1, 2, 2, 1, 3)
-print(curve:evaluate(0.5))
-local newTween = tween.new(1, { scale = { 0, 0 } }, { scale = { 1, 1 } }, "inOutSine")
-newTween:set(0.75)
-print(newTween.subject.scale[1])
-
 love.graphics.setDefaultFilter("nearest")
 
 local config = {
@@ -29,8 +23,9 @@ local gridTemplate = {
 		local grid = {}
 		grid.gamestate = {
 			forceClick = true,
-			freebies = love.math.random(20, 25),
+			freebies = love.math.random(10, 10),
 			finished = false,
+			decayRate = globals.defaultDecayRate
 		}
 		grid.gamestate.score = {
 			tiles = 0
@@ -65,6 +60,11 @@ local gridTemplate = {
 				end
 			end
 			return hits
+		end
+
+		function grid:tick()
+			self.gamestate.decayRate = globals.defaultDecayRate * math.sqrt(self.gamestate.score.tiles)
+			print(self.gamestate.decayRate / globals.defaultDecayRate)
 		end
 
 		if fieldsize then
@@ -143,6 +143,7 @@ function love.update(dt)
 			tickTimer = tickTimer - 0.045
 			ticksThisSecond = ticksThisSecond + 1
 			local aliveTiles = 0
+			grid:tick()
 			grid:lambdaOnAllTiles(function(tile)
 				if not grid.gamestate.finished then
 					tile:tick(dt)
@@ -152,7 +153,6 @@ function love.update(dt)
 				end
 			end)
 			if aliveTiles == 0 and not grid.gamestate.forceClick and not grid.gamestate.finished then
-				print(aliveTiles)
 				grid.gamestate.finished = true
 				grid:lambdaOnAllTiles(function(tile)
 					tile.parentGrid.tiles[tile.position.x] = tile.parentGrid.tiles[tile.position.x] or {}
@@ -160,14 +160,6 @@ function love.update(dt)
 					tile.parentGrid.unloadedTiles[tile.position.x][tile.position.y] = nil
 				end, grid.unloadedTiles)
 				-- this can be optimised but i cba
-				local score = 0
-				score = grid:lambdaOnAllTiles(function(tile)
-					if tile.cleared then
-						return true
-					end
-				end)
-				grid.gamestate.score.tiles = score
-				print(grid.gamestate.score.tiles)
 			end
 		end
 
