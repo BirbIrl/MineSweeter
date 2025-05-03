@@ -327,7 +327,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 end
 
 function love.wheelmoved(x, y)
-	y = bath.sign(y) -- the web version seems to go from -2 to 2 sometimes which breaks everything
+	y = bath.sign(y) / 4 -- the web version seems to go from -2 to 2 sometimes which breaks everything
 	local mouseX, mouseY = love.mouse.getPosition()
 	local oldZoom = config.zoom
 	config.zoom = config.zoom + (config.zoom * y * 0.5)
