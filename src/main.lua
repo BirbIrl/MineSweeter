@@ -5,6 +5,7 @@ local bath = require("library.modules.bath")
 local vector = require("library.modules.vector")
 local tween = require("library.modules.tween")
 local Tile = require("tileLogic")
+local sounds = require("sounds")
 local globals = require("globals")
 local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
 
@@ -15,7 +16,7 @@ local config = {
 	pan = vector.new(0, 0),
 	pause = false,
 	enableRendering = true,
-	fieldsize = vector.new(5, 5)
+	fieldsize = vector.new(1, 1)
 }
 
 local gridTemplate = {
@@ -122,7 +123,7 @@ local function triggerTile(grid, mousePos, mouseButton)
 		)
 		if grid.tiles[x] and grid.tiles[x][y] then
 			if mouseButton == 1 then
-				grid.tiles[x][y]:trigger(nil, grid.gamestate.forceClick)
+				grid.tiles[x][y]:trigger(nil, true, grid.gamestate.forceClick)
 				grid.gamestate.forceClick = false
 			elseif mouseButton == 2 then
 				grid.tiles[x][y]:flag()
@@ -154,6 +155,7 @@ function love.update(dt)
 			end)
 			if aliveTiles == 0 and not grid.gamestate.forceClick and not grid.gamestate.finished then
 				grid.gamestate.finished = true
+				sounds.gameEnd:play()
 				grid:lambdaOnAllTiles(function(tile)
 					tile.parentGrid.tiles[tile.position.x] = tile.parentGrid.tiles[tile.position.x] or {}
 					tile.parentGrid.tiles[tile.position.x][tile.position.y] = tile
@@ -266,6 +268,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 			local tileOpacity = tile.decay
 			if tileOpacity > 1 then tileOpacity = 1 end
 			local scale = tileSize
+			local translate = vector.new(0, 0)
 			if grid.gamestate.finished then
 				tileOpacity = 1
 			else
@@ -274,13 +277,19 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 			for _, anim in pairs(tile.anims) do
 				for trait, values in pairs(anim.subject) do
 					if trait == "scale" then
-						scale = scale * values[1]
+						scale = scale * values.x
+					elseif trait == "translate" then
+						translate = vector.new(values.x, values.y)
+					elseif trait == "opacity" then
+						tileOpacity = values
 					end
 				end
 			end
-			local x = config.pan.x + (tileSize * globals.tileGap) * (tile.position.x + 1) -
+			if scale < 0 then scale = 0 end
+			local x = config.pan.x + (tileSize * globals.tileGap) * (tile.position.x + translate.x + 1) -
 				((tileSize + scale) / 2)
-			local y = config.pan.y + (tileSize * globals.tileGap) * (tile.position.y + 1) - ((tileSize + scale) / 2)
+			local y = config.pan.y + (tileSize * globals.tileGap) * (tile.position.y + translate.y + 1) -
+				((tileSize + scale) / 2)
 			if x > -scale and y > -scale and x < love.graphics.getWidth() and y < love.graphics.getHeight() then
 				if tile.cleared then
 					if tile.mine then
@@ -319,7 +328,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		(love.graphics.getHeight() - (textScale * 200)) * 0.75, love.graphics.getWidth() / textScale,
 		"center", 0, textScale)
 	love.graphics.print(
-		"MineSweeter alpha v1.0" ..
+		"MineSweeter alpha v0.2" ..
 		"\nFPS: " ..
 		love.timer.getFPS() ..
 		"\nLeft click to reveal a tile\nRight Click to mark a mine\nR to restart\nP to pause\nf1 to disable rendering (debug)\nf11 to fullscreen",

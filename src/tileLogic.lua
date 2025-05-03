@@ -3,40 +3,66 @@ local globals = require("globals")
 local vector = require("library.modules.vector")
 local tween = require("library.modules.tween")
 local serpent = require("library.modules.serpent")
+local sounds = require("sounds")
 local tileTemplate = {
 	new = nil -- defined later
 }
-function shallow_copy(t)
-	local t2 = {}
-	for k, v in pairs(t) do
-		t2[k] = v
+
+local animTemplate = {
+}
+function animTemplate:new(tween, delay)
+	delay = delay or 0
+	local twn = tween
+	twn.delay = delay
+	function twn:tick(dt)
+		if delay > 0 then
+			delay = delay - dt
+		elseif twn:update(dt) then
+			self = nil
+		end
 	end
-	return t2
+
+	return twn
+end
+
+function animTemplate:newMirrored(tween, delay)
+	local twn = self:new(tween, delay)
+	twn.hasLooped = false
+	function twn:tick(dt)
+		if self.delay > 0 then
+			self.delay = self.delay - dt
+		elseif twn:update(dt) then
+			if not self.hasLooped then
+				local tmp = self.initial
+				self.initial = self.target
+				self.target = tmp
+				self:reset()
+				self.hasLooped = true
+			else
+				self = nil
+			end
+		end
+	end
+
+	return twn
 end
 
 local anims = {
 	popScale = function(size, duration, delay)
-		delay = delay or 0
-		local twn = tween.new(duration, { scale = { 1, 1 } }, { scale = { size, size } }, "inOutSine")
-		twn.hasLooped = false
-		twn.delay = delay
-		function twn:tick(dt)
-			if delay > 0 then
-				delay = delay - dt
-			elseif twn:update(dt) then
-				if not self.hasLooped then
-					local tmp = self.initial
-					self.initial = self.target
-					self.target = tmp
-					self:reset()
-					self.hasLooped = true
-				else
-					self = nil
-				end
-			end
-		end
-
-		return twn
+		return animTemplate:newMirrored(
+			tween.new(duration, { scale = { x = 1, y = 1 } }, { scale = { x = size, y = size } }, "inOutSine"), delay)
+	end,
+	reveal = function(duration, delay)
+		return animTemplate:new(
+			tween.new(duration, { opacity = 0 }, { opacity = 1 }, "inOutSine"), delay)
+	end,
+	shuffleAway = function(sourcePos, targetPos, duration, delay)
+		local translate = targetPos - sourcePos
+		translate = translate / 20
+		return animTemplate:newMirrored(
+			tween.new(duration, { translate = { x = 0, y = 0 } }, { translate = { x = translate.x, y = translate.y } },
+				"inOutSine"),
+			delay)
 	end
 }
 
@@ -81,7 +107,8 @@ tileTemplate = {
 			return hits
 		end
 
-		function tile:generateTilesInRadius(pos, radius, curve)
+		function tile:generateTilesInRadius(pos, radius, curve, chainSource)
+			local chainPenalty = 0
 			pos = pos or self.pos
 			radius = radius or 1
 			for x = -radius, radius, 1 do
@@ -91,7 +118,13 @@ tileTemplate = {
 						if not grid.tiles[pos.x + x] then grid.tiles[pos.x + x] = {} end
 						if not grid.tiles[pos.x + x][pos.y + y]
 							and not (grid.unloadedTiles[pos.x + x] and grid.unloadedTiles[pos.x + x][pos.y + y]) then
-							grid.tiles[pos.x + x][pos.y + y] = tileTemplate:new(grid, vector.new(pos.x + x, pos.y + y))
+							local tile = tileTemplate:new(grid, vector.new(pos.x + x, pos.y + y))
+							grid.tiles[pos.x + x][pos.y + y] = tile
+							if chainSource then
+								chainPenalty = math.sqrt(chainSource:dist(tile.position))
+							end
+							tile.anims[#self.anims + 1] = anims.reveal(0.25,
+								chainPenalty / 10 - 0.1)
 						end
 					end
 				end
@@ -105,6 +138,8 @@ tileTemplate = {
 					chainPenalty = math.sqrt(chainSource:dist(self.position))
 				end
 				self.anims[#self.anims + 1] = anims.popScale(1.2, 0.25, chainPenalty / 10)
+				self.anims[#self.anims + 1] = anims.shuffleAway(chainSource, self.position, 0.25, chainPenalty / 10)
+
 				if self.parentGrid.gamestate.freebies > 0 then
 					self.mine = false
 					self.parentGrid.gamestate.freebies = self.parentGrid.gamestate.freebies - 1
@@ -195,11 +230,17 @@ tileTemplate = {
 			end
 		end
 
-		function tile:trigger(chainSource, force)
-			chainSource = chainSource or self.position
+		function tile:trigger(chainSource, player, force)
+			if not chainSource then
+				chainSource = self.position
+				self.anims[#self.anims + 1] = anims.popScale(1.15, 0.15)
+			end
 			if not self.flagged and self.decay > 0 then
 				if self.cleared == false then
 					if self.mine == nil and not force then
+						if player then
+							sounds.fail:clone():play()
+						end
 						return false
 					end
 					self.cleared = true
@@ -208,26 +249,39 @@ tileTemplate = {
 					end
 					if self.mine then
 						self:startDecayInRadius(4, true, false, 1, 0.5)
+						sounds.boom:play()
 					else
-						self:generateTilesInRadius(self.position, 5, true)
+						if player then
+							sounds.reveal:clone():play()
+						end
+						self:generateTilesInRadius(self.position, 8, true, chainSource)
 						self:observeInRadius(1, false, true, chainSource)
 						self:getLabel(chainSource)
 					end
 					self.parentGrid.gamestate.score.tiles = self.parentGrid.gamestate.score.tiles + 1
+					return true
 				else
-					if self.label == self:countInRadiusFlagsOrRevealedBombs() then
+					if player and self.label == self:countInRadiusFlagsOrRevealedBombs() then
 						if self.parentGrid.gamestate.freebies > 0 then
 							chainSource = self.position
 						end
-						self:triggerInRadius(1, false, true, chainSource)
+						if self:triggerInRadius(1, false, true) > 0 then
+							sounds.reveal:clone():play()
+						else
+							sounds.fail:clone():play()
+						end
+					elseif player then
+						sounds.fail:clone():play()
 					end
 				end
 			end
 		end
 
 		function tile:flag()
+			self.anims[#self.anims + 1] = anims.popScale(1.15, 0.15)
 			if self.mine ~= nil and not self.cleared then
 				self.flagged = not self.flagged
+				sounds.flag:clone():play()
 			end
 		end
 
