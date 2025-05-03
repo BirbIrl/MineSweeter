@@ -84,14 +84,19 @@ local grid
 function love.keypressed(key)
 	if key == "r" then
 		grid = gridTemplate.new(config.fieldsize)
-	end
-	if key == "p" then
+	elseif key == "p" then
 		config.pause = not config.pause
-	end
-	if key == "f1" then
+	elseif key == "=" then
+		love.audio.setVolume(love.audio.getVolume() + 0.1)
+	elseif key == "-" then
+		if love.audio.getVolume() < 0.1 then
+			love.audio.setVolume(0)
+		else
+			love.audio.setVolume(love.audio.getVolume() - 0.1)
+		end
+	elseif key == "f1" then
 		config.enableRendering = not config.enableRendering
-	end
-	if key == "f11" then
+	elseif key == "f11" then
 		love.window.setFullscreen(not love.window.getFullscreen())
 	end
 end
@@ -138,8 +143,8 @@ local tickTimer = 0
 local ticksThisSecond = 0
 local timer = 0
 function love.update(dt)
-	tickTimer = tickTimer + dt
 	if not config.pause then
+		tickTimer = tickTimer + dt
 		if tickTimer > 0.045 then
 			tickTimer = tickTimer - 0.045
 			ticksThisSecond = ticksThisSecond + 1
@@ -281,7 +286,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 					elseif trait == "translate" then
 						translate = vector.new(values.x, values.y)
 					elseif trait == "opacity" then
-						tileOpacity = values
+						tileOpacity = tileOpacity * values
 					end
 				end
 			end
@@ -321,8 +326,13 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		splash = "Death :(\nScore: " .. grid.gamestate.score.tiles
 	elseif config.pause then
 		splash = "Game Paused"
+	elseif grid.gamestate.forceClick then
+		splash = "Escape the void.\nClick the tile to begin."
 	end
 	local textScale = (love.graphics.getWidth() + love.graphics.getHeight()) / (1080 + 1920)
+	if textScale > 0.5 then
+		textScale = 0.5
+	end
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.printf(splash, tileFont, 0,
 		(love.graphics.getHeight() - (textScale * 200)) * 0.75, love.graphics.getWidth() / textScale,
@@ -331,7 +341,9 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		"MineSweeter alpha v0.2" ..
 		"\nFPS: " ..
 		love.timer.getFPS() ..
-		"\nLeft click to reveal a tile\nRight Click to mark a mine\nR to restart\nP to pause\nf1 to disable rendering (debug)\nf11 to fullscreen",
+		"\nVolume: " ..
+		math.floor(love.audio.getVolume() * 10) / 10 ..
+		"\nLeft click to reveal a tile\nRight Click to mark a mine\nDrag click to move the camera\nScroll to zoom in/out\nR to restart\nP to pause\n+/- to raise/lower volume\nf1 to disable rendering (debug)\nf11 to fullscreen",
 		tileFont, 0, 0, 0, 0.15)
 end
 

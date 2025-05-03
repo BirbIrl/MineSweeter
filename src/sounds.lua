@@ -1,3 +1,4 @@
+love.audio.setVolume(0.5)
 local sounds = {
 	boom = love.audio.newSource("data/audio/boom.wav", "static"),
 	flag = love.audio.newSource("data/audio/flag.wav", "static"),
