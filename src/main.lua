@@ -105,17 +105,25 @@ function love.load()
 	grid = gridTemplate.new(config.fieldsize)
 end
 
-local m1 = {
-	lastMousePos = nil,
-	startingMousePos = nil
-}
-local m2 = {
-	lastMousePos = nil,
-	startingMousePos = nil
-}
-local m3 = {
-	lastMousePos = nil,
-	startingMousePos = nil
+local input = {
+	m1 = {
+		lastMousePos = nil,
+		startingMousePos = nil
+	},
+	m2 = {
+		lastMousePos = nil,
+		startingMousePos = nil
+	},
+	t1 = {
+		lastTouchPos = nil,
+		startingTouchPos = nil,
+		touchId = nil
+	},
+	t2 = {
+		lastTouchPos = nil,
+		startingTouchPos = nil,
+		touchId = nil
+	},
 }
 local function triggerTile(grid, mousePos, mouseButton)
 	local size = globals.tilesize * config.zoom
@@ -177,58 +185,55 @@ function love.update(dt)
 
 	if love.mouse.isDown(1) then
 		local newPos = vector.new(love.mouse.getPosition())
-		if m1.lastMousePos then
-			config.pan.x = config.pan.x + (newPos.x - m1.lastMousePos.x)
-			config.pan.y = config.pan.y + (newPos.y - m1.lastMousePos.y)
+		if input.m1.lastMousePos then
+			config.pan.x = config.pan.x + (newPos.x - input.m1.lastMousePos.x)
+			config.pan.y = config.pan.y + (newPos.y - input.m1.lastMousePos.y)
 		end
-		m1.startingMousePos = m1.startingMousePos or newPos
-		m1.lastMousePos = newPos
+		input.m1.startingMousePos = input.m1.startingMousePos or newPos
+		input.m1.lastMousePos = newPos
 	else
-		if m1.lastMousePos or m1.startingMousePos then
-			if m1.lastMousePos:dist(m1.startingMousePos) <= 10 then
+		if input.m1.lastMousePos or input.m1.startingMousePos then
+			if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 then
 				if not config.pause then
-					triggerTile(grid, m1.lastMousePos, 1)
+					triggerTile(grid, input.m1.lastMousePos, 1)
 				end
 			end
-			m1.lastMousePos = nil
-			m1.startingMousePos = nil
+			input.m1.lastMousePos = nil
+			input.m1.startingMousePos = nil
 		end
 	end
 	if love.mouse.isDown(2) then
 		local newPos = vector.new(love.mouse.getPosition())
-		m2.startingMousePos = m2.startingMousePos or newPos
-		if m2.lastMousePos then
-			config.pan.x = config.pan.x + (newPos.x - m2.lastMousePos.x)
-			config.pan.y = config.pan.y + (newPos.y - m2.lastMousePos.y)
+		input.m2.startingMousePos = input.m2.startingMousePos or newPos
+		if input.m2.lastMousePos then
+			config.pan.x = config.pan.x + (newPos.x - input.m2.lastMousePos.x)
+			config.pan.y = config.pan.y + (newPos.y - input.m2.lastMousePos.y)
 		end
-		m2.lastMousePos = newPos
+		input.m2.lastMousePos = newPos
 	else
-		if m2.lastMousePos or m2.startingMousePos then
-			if m2.lastMousePos:dist(m2.startingMousePos) <= 10 then
+		if input.m2.lastMousePos or input.m2.startingMousePos then
+			if input.m2.lastMousePos:dist(input.m2.startingMousePos) <= 10 then
 				if not config.pause then
-					triggerTile(grid, m2.lastMousePos, 2)
+					triggerTile(grid, input.m2.lastMousePos, 2)
 				end
 			end
-			m2.lastMousePos = nil
-			m2.startingMousePos = nil
+			input.m2.lastMousePos = nil
+			input.m2.startingMousePos = nil
 		end
 	end
-	if love.mouse.isDown(3) then
-		local newPos = vector.new(love.mouse.getPosition())
-		m3.startingMousePos = m3.startingMousePos or newPos
-		if m3.lastMousePos then
-			config.pan.x = config.pan.x + (newPos.x - m3.lastMousePos.x)
-			config.pan.y = config.pan.y + (newPos.y - m3.lastMousePos.y)
+	local touches = love.touch.getTouches()
+	for i, value in ipairs(touches) do
+		local t = "t" .. i
+		local x, y = love.touch.getPosition(value)
+		local pos = vector.new(x, y)
+		if input[t].touchId ~= value then
+			input[t].touchId = value
+			input[t].startingMousePos = pos
+			input[t].lastTouchPos = nil
+		else
+			input[t].lastTouchPos = input[t].newTouchPos
 		end
-		m3.lastMousePos = newPos
-	else
-		if m3.lastMousePos or m3.startingMousePos then
-			if m3.lastMousePos:dist(m3.startingMousePos) <= 10 then
-				triggerTile(grid, m3.lastMousePos, 3)
-			end
-			m3.lastMousePos = nil
-			m3.startingMousePos = nil
-		end
+		input[t].newTouchPos = vector.new(x, y)
 	end
 end
 
@@ -327,7 +332,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	elseif config.pause then
 		splash = "Game Paused"
 	elseif grid.gamestate.forceClick then
-		splash = serpent.block(love.touch.getTouches())
+		splash = serpent.block(input.t1) .. "\n" .. serpent.block(input.t2)
 		--splash = "Escape the void.\nClick the tile to begin."
 	end
 	local textScale = (love.graphics.getWidth() + love.graphics.getHeight()) / (1080 + 1920)
