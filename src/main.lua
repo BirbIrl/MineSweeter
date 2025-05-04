@@ -238,7 +238,7 @@ function love.update(dt)
 	end
 	if touches[1] and touches[2] and input.t1.lastTouchPos and input.t2.lastTouchPos then
 		local center = (input.t1.startingTouchPos + input.t2.startingTouchPos) / 2
-		local zoomAmount = ((input.t1.newTouchPos - input.t2.newTouchPos):getmag() +
+		local zoomAmount = ((input.t1.newTouchPos - input.t2.newTouchPos):getmag() -
 			(input.t1.lastTouchPos - input.t2.lastTouchPos):getmag()) / 100
 		local oldZoom = config.zoom
 		config.zoom = config.zoom + (config.zoom * zoomAmount)
