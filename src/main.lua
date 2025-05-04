@@ -7,6 +7,7 @@ local tween = require("library.modules.tween")
 local Tile = require("tileLogic")
 local sounds = require("sounds")
 local globals = require("globals")
+local buttons = require "buttons" -- woe lua syntax be upon ye
 local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
 
 love.graphics.setDefaultFilter("nearest")
@@ -17,35 +18,15 @@ local config = {
 	pause = false,
 	enableRendering = true,
 	fieldsize = vector.new(1, 1),
-	mobile = false,
+	mobile = true,
 	flagMode = false,
 }
 
-local flagButton = {
-	width = 100,
-	height = 100,
-	x = 0,
-}
-flagButton.y = love.graphics.getHeight() - flagButton.height
-
-function flagButton:isWithinRange(pos)
-	if pos.x > self.x and pos.x < self.width + self.x
-		and pos.y > self.y and pos.y < self.height + self.y
-	then
-		return true
-	end
-end
-
-function flagButton.trigger()
-	config.flagMode = not config.flagMode
-end
-
-function flagButton:update()
-	self.y = love.graphics.getHeight() - self.height
-end
 
 function love.resize()
-	flagButton:update()
+	for _, button in pairs(buttons) do
+		button:update()
+	end
 end
 
 local gridTemplate = {
@@ -213,6 +194,10 @@ function love.update(dt)
 	end
 
 	local touches = love.touch.getTouches()
+	if touches[1] and not config.mobile then
+		config.mobile = true
+	end
+
 	if not touches[2] then
 		input.t1.lastTouchPos = nil
 		input.t1.touchId = nil
@@ -229,9 +214,14 @@ function love.update(dt)
 		else
 			if input.m1.lastMousePos or input.m1.startingMousePos then
 				if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 then
-					if config.mobile and flagButton:isWithinRange(input.m1.lastMousePos) then
-						flagButton.trigger()
-					elseif not config.pause then
+					if config.mobile then
+						if buttons.flag:isWithinRange(input.m1.lastMousePos) then
+							config.flagMode = not config.flagMode
+						elseif buttons.reset:isWithinRange(input.m1.lastMousePos) and grid.gamestate.finished then
+							grid = gridTemplate.new(config.fieldsize)
+						end
+					end
+					if not config.pause then
 						triggerTile(grid, input.m1.lastMousePos, 1)
 					end
 				end
@@ -262,7 +252,6 @@ function love.update(dt)
 		input.m1.lastMousePos = nil
 		input.m1.startingMousePos = nil
 		for i, value in ipairs(touches) do
-			config.mobile = true
 			local t = "t" .. i
 			local x, y = love.touch.getPosition(value)
 			local pos = vector.new(x, y)
@@ -378,7 +367,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	end
 	if config.mobile then
 		love.graphics.setColor(1, 1, 1, 1)
-		love.graphics.rectangle("line", flagButton.x, flagButton.y, flagButton.width, flagButton.height)
+		love.graphics.rectangle("line", buttons.flag.x, buttons.flag.y, buttons.flag.width, buttons.flag.height)
 
 		if config.flagMode then
 			love.graphics.setColor(1, 1, 0, 1)
@@ -386,7 +375,16 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 			love.graphics.setColor(1, 1, 0, 0.25)
 		end
 		love.graphics.printf("F", tileFont,
-			flagButton.x + flagButton.width / 18, flagButton.y + flagButton.height / 50, flagButton.width, "center", 0, 1)
+			buttons.flag.x + buttons.flag.width / 18, buttons.flag.y + buttons.flag.height / 50, buttons.flag.width,
+			"center", 0, 1)
+		if grid.gamestate.finished then
+			love.graphics.setColor(1, 1, 1, 1)
+			love.graphics.rectangle("line", buttons.reset.x, buttons.reset.y, buttons.reset.width, buttons.reset.height)
+			love.graphics.printf("R", tileFont,
+				buttons.reset.x + buttons.reset.width / 18, buttons.reset.y + buttons.reset.height / 50,
+				buttons.reset.width,
+				"center", 0, 1)
+		end
 	end
 	local splash = ""
 	if grid.gamestate.finished then
