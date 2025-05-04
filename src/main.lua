@@ -17,7 +17,7 @@ local config = {
 	pause = false,
 	enableRendering = true,
 	fieldsize = vector.new(1, 1),
-	mobile = true,
+	mobile = false,
 	flagMode = false,
 }
 
