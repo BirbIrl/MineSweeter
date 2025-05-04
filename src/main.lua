@@ -228,6 +228,7 @@ function love.update(dt)
 			end
 		end
 	else
+		input.m1.lastMousePos = nil
 		for i, value in ipairs(touches) do
 			globals.mobile = true
 			local t = "t" .. i
