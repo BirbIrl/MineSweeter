@@ -297,6 +297,8 @@ tileTemplate = {
 			if self.mine ~= nil and not self.cleared then
 				self.flagged = not self.flagged
 				sounds.flag:clone():play()
+			else
+				sounds.fail:clone():play()
 			end
 		end
 

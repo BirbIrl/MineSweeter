@@ -216,11 +216,9 @@ function love.update(dt)
 				if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 then
 					if config.mobile and buttons.flag:isWithinRange(input.m1.lastMousePos) then
 						config.flagMode = not config.flagMode
-					end
-					if buttons.reset:isWithinRange(input.m1.lastMousePos) and grid.gamestate.finished then
+					elseif buttons.reset:isWithinRange(input.m1.lastMousePos) and grid.gamestate.finished then
 						grid = gridTemplate.new(config.fieldsize)
-					end
-					if not config.pause then
+					elseif not config.pause then
 						triggerTile(grid, input.m1.lastMousePos, 1)
 					end
 				end
