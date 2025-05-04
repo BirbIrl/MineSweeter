@@ -223,17 +223,27 @@ function love.update(dt)
 	end
 	local touches = love.touch.getTouches()
 	for i, value in ipairs(touches) do
+		globals.mobile = true
 		local t = "t" .. i
 		local x, y = love.touch.getPosition(value)
 		local pos = vector.new(x, y)
 		if input[t].touchId ~= value then
 			input[t].touchId = value
-			input[t].startingMousePos = pos
+			input[t].startingTouchPos = pos
 			input[t].lastTouchPos = nil
 		else
 			input[t].lastTouchPos = input[t].newTouchPos
 		end
 		input[t].newTouchPos = vector.new(x, y)
+	end
+	if touches[1] and touches[2] and input.t1.lastTouchPos and input.t2.lastTouchPos then
+		local center = (input.t1.startingTouchPos + input.t2.startingTouchPos) / 2
+		local zoomAmount = (input.t1.newTouchPos - input.t1.lastTouchPos).length() +
+			(input.t2.newTouchPos - input.t2.lastTouchPos).length()
+		local oldZoom = config.zoom
+		config.zoom = config.zoom + (config.zoom * zoomAmount)
+		config.pan.x = config.pan.x + (center.x - config.pan.x) * (1 - config.zoom / oldZoom)
+		config.pan.y = config.pan.y + (center.y - config.pan.y) * (1 - config.zoom / oldZoom)
 	end
 end
 
