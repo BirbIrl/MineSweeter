@@ -327,7 +327,8 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	elseif config.pause then
 		splash = "Game Paused"
 	elseif grid.gamestate.forceClick then
-		splash = "Escape the void.\nClick the tile to begin."
+		splash = serpent.block(love.touch.getTouches())
+		--splash = "Escape the void.\nClick the tile to begin."
 	end
 	local textScale = (love.graphics.getWidth() + love.graphics.getHeight()) / (1080 + 1920)
 	if textScale > 0.5 then
@@ -338,7 +339,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		(love.graphics.getHeight() - (textScale * 200)) * 0.75, love.graphics.getWidth() / textScale,
 		"center", 0, textScale)
 	love.graphics.print(
-		"MineSweeter alpha v0.2" ..
+		"VoidSweeper v1.0" ..
 		"\nFPS: " ..
 		love.timer.getFPS() ..
 		"\nVolume: " ..
