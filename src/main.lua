@@ -404,26 +404,28 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	local usefulInfo =
 		"VoidSweeper v1.0" ..
 		"\nFPS: " .. love.timer.getFPS()
-	if config.mobile then
-		usefulInfo = usefulInfo ..
-			"\nTap on a tile to reveal it" ..
-			"\nUse flag button to switch to flag mode" ..
-			"\nYou can move/zoom the camera by dragging/pinching"
-	else
-		usefulInfo = usefulInfo ..
-			"\nVolume: " ..
-			math.floor(love.audio.getVolume() * 10) / 10 ..
-			"\nLeft click to reveal a tile" ..
-			"\nRight Click to mark a mine" ..
-			"\nDrag click to move the camera" ..
-			"\nScroll to zoom in/out" ..
-			"\nR to restart" ..
-			"\nP to pause" ..
-			"\n+/- to raise/lower volume" ..
-			"\nf1 to disable rendering (debug)" ..
-			"\nf11 to fullscreen"
+	if grid.gamestate.forceClick or config.pause then
+		if config.mobile then
+			usefulInfo = usefulInfo ..
+				"\n- Tap on a tile to reveal it" ..
+				"\n- Use flag button to switch to flag mode" ..
+				"\n- You can move/zoom the camera by dragging/pinching"
+		else
+			usefulInfo = usefulInfo ..
+				"\n- Volume: " ..
+				math.floor(love.audio.getVolume() * 10) / 10 ..
+				"\n- Left click to reveal a tile" ..
+				"\n- Right Click to mark a mine" ..
+				"\n- Drag click to move the camera" ..
+				"\n- Scroll to zoom in/out" ..
+				"\n- R to restart" ..
+				"\n- P to pause" ..
+				"\n- +/- to raise/lower volume" ..
+				"\n- f1 to disable rendering (debug)" ..
+				"\n- f11 to fullscreen"
+		end
 	end
-	love.graphics.print(usefulInfo, tileFont, 0, 0, 0, 0.15)
+	love.graphics.printf(usefulInfo, tileFont, 0, 0, love.graphics.getWidth() * (1 / 0.15), "left", 0, 0.15)
 end
 
 function love.wheelmoved(x, y)
