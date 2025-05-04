@@ -183,60 +183,67 @@ function love.update(dt)
 		end)
 	end
 
-	if love.mouse.isDown(1) then
-		local newPos = vector.new(love.mouse.getPosition())
-		if input.m1.lastMousePos then
-			config.pan.x = config.pan.x + (newPos.x - input.m1.lastMousePos.x)
-			config.pan.y = config.pan.y + (newPos.y - input.m1.lastMousePos.y)
-		end
-		input.m1.startingMousePos = input.m1.startingMousePos or newPos
-		input.m1.lastMousePos = newPos
-	else
-		if input.m1.lastMousePos or input.m1.startingMousePos then
-			if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 then
-				if not config.pause then
-					triggerTile(grid, input.m1.lastMousePos, 1)
-				end
-			end
-			input.m1.lastMousePos = nil
-			input.m1.startingMousePos = nil
-		end
-	end
-	if love.mouse.isDown(2) then
-		local newPos = vector.new(love.mouse.getPosition())
-		input.m2.startingMousePos = input.m2.startingMousePos or newPos
-		if input.m2.lastMousePos then
-			config.pan.x = config.pan.x + (newPos.x - input.m2.lastMousePos.x)
-			config.pan.y = config.pan.y + (newPos.y - input.m2.lastMousePos.y)
-		end
-		input.m2.lastMousePos = newPos
-	else
-		if input.m2.lastMousePos or input.m2.startingMousePos then
-			if input.m2.lastMousePos:dist(input.m2.startingMousePos) <= 10 then
-				if not config.pause then
-					triggerTile(grid, input.m2.lastMousePos, 2)
-				end
-			end
-			input.m2.lastMousePos = nil
-			input.m2.startingMousePos = nil
-		end
-	end
 	local touches = love.touch.getTouches()
-	for i, value in ipairs(touches) do
-		globals.mobile = true
-		local t = "t" .. i
-		local x, y = love.touch.getPosition(value)
-		local pos = vector.new(x, y)
-		if input[t].touchId ~= value then
-			input[t].touchId = value
-			input[t].startingTouchPos = pos
-			input[t].lastTouchPos = nil
+	if not touches[2] then
+		input.t1.lastTouchPos = nil
+		input.t1.touchId = nil
+		input.t2.lastTouchPos = nil
+		input.t2.touchId = nil
+		if love.mouse.isDown(1) then
+			local newPos = vector.new(love.mouse.getPosition())
+			if input.m1.lastMousePos then
+				config.pan.x = config.pan.x + (newPos.x - input.m1.lastMousePos.x)
+				config.pan.y = config.pan.y + (newPos.y - input.m1.lastMousePos.y)
+			end
+			input.m1.startingMousePos = input.m1.startingMousePos or newPos
+			input.m1.lastMousePos = newPos
 		else
-			input[t].lastTouchPos = input[t].newTouchPos
+			if input.m1.lastMousePos or input.m1.startingMousePos then
+				if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 then
+					if not config.pause then
+						triggerTile(grid, input.m1.lastMousePos, 1)
+					end
+				end
+				input.m1.lastMousePos = nil
+				input.m1.startingMousePos = nil
+			end
 		end
-		input[t].newTouchPos = vector.new(x, y)
+		if love.mouse.isDown(2) then
+			local newPos = vector.new(love.mouse.getPosition())
+			input.m2.startingMousePos = input.m2.startingMousePos or newPos
+			if input.m2.lastMousePos then
+				config.pan.x = config.pan.x + (newPos.x - input.m2.lastMousePos.x)
+				config.pan.y = config.pan.y + (newPos.y - input.m2.lastMousePos.y)
+			end
+			input.m2.lastMousePos = newPos
+		else
+			if input.m2.lastMousePos or input.m2.startingMousePos then
+				if input.m2.lastMousePos:dist(input.m2.startingMousePos) <= 10 then
+					if not config.pause then
+						triggerTile(grid, input.m2.lastMousePos, 2)
+					end
+				end
+				input.m2.lastMousePos = nil
+				input.m2.startingMousePos = nil
+			end
+		end
+	else
+		for i, value in ipairs(touches) do
+			globals.mobile = true
+			local t = "t" .. i
+			local x, y = love.touch.getPosition(value)
+			local pos = vector.new(x, y)
+			if input[t].touchId ~= value then
+				input[t].touchId = value
+				input[t].startingTouchPos = pos
+				input[t].lastTouchPos = nil
+			else
+				input[t].lastTouchPos = input[t].newTouchPos
+			end
+			input[t].newTouchPos = vector.new(x, y)
+		end
 	end
-	if touches[1] and touches[2] and input.t1.lastTouchPos and input.t2.lastTouchPos then
+	if input.t1.lastTouchPos and input.t2.lastTouchPos then
 		local center = (input.t1.startingTouchPos + input.t2.startingTouchPos) / 2
 		local zoomAmount = ((input.t1.newTouchPos - input.t2.newTouchPos):getmag() -
 			(input.t1.lastTouchPos - input.t2.lastTouchPos):getmag()) / 100
