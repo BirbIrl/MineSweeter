@@ -8,8 +8,7 @@ local Tile = require("tileLogic")
 local sounds = require("sounds")
 local globals = require("globals")
 local buttons = require "buttons" -- woe lua syntax be upon ye
-local tileFont = love.graphics.newFont("data/fonts/monocraft.ttc", 100)
-
+local tileFont = love.graphics.newFont("data/fonts/monocraft-birb-fix.ttf", 100)
 love.graphics.setDefaultFilter("nearest")
 
 local config = {
@@ -18,16 +17,9 @@ local config = {
 	pause = false,
 	enableRendering = true,
 	fieldsize = vector.new(1, 1),
-	mobile = false,
+	mobile = true,
 	flagMode = false,
 }
-
-
-function love.resize()
-	for _, button in pairs(buttons) do
-		button:update()
-	end
-end
 
 local gridTemplate = {
 	new = function(fieldsize)
@@ -271,6 +263,9 @@ function love.update(dt)
 		config.pan.x = config.pan.x + (center.x - config.pan.x) * (1 - config.zoom / oldZoom)
 		config.pan.y = config.pan.y + (center.y - config.pan.y) * (1 - config.zoom / oldZoom)
 	end
+	for _, button in pairs(buttons) do
+		button:update()
+	end
 end
 
 local function printTileLabel(tile, x, y, tileSize, scale, tileOpacity)
@@ -301,7 +296,7 @@ local function printTileLabel(tile, x, y, tileSize, scale, tileOpacity)
 		color = { 1, 1, 0, 1 * tileOpacity }
 	end
 
-	love.graphics.print({ color, label }, tileFont, x + scale / 4.5, y,
+	love.graphics.print({ color, label }, tileFont, x + scale / 4.5, y - scale * 0.26,
 		nil,
 		scale / 100,
 		scale / 100)
@@ -372,14 +367,14 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 			love.graphics.setColor(1, 1, 0, 0.25)
 		end
 		love.graphics.printf("F", tileFont,
-			buttons.flag.x + buttons.flag.width / 18, buttons.flag.y + buttons.flag.height / 50, buttons.flag.width,
+			buttons.flag.x + buttons.flag.width / 18, buttons.flag.y - buttons.flag.height * 0.26, buttons.flag.width,
 			"center", 0, 1)
 	end
 	if grid.gamestate.finished then
 		love.graphics.setColor(1, 1, 1, 1)
 		love.graphics.rectangle("line", buttons.reset.x, buttons.reset.y, buttons.reset.width, buttons.reset.height)
 		love.graphics.printf("R", tileFont,
-			buttons.reset.x + buttons.reset.width / 18, buttons.reset.y + buttons.reset.height / 50,
+			buttons.reset.x + buttons.reset.width / 18, buttons.reset.y - buttons.reset.height * 0.26,
 			buttons.reset.width,
 			"center", 0, 1)
 	end
