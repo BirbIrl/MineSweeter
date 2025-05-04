@@ -40,6 +40,14 @@ function flagButton.trigger()
 	config.flagMode = not config.flagMode
 end
 
+function flagButton:update()
+	self.y = love.graphics.getHeight() - self.height
+end
+
+function love.resize()
+	flagButton:update()
+end
+
 local gridTemplate = {
 	new = function(fieldsize)
 		local grid = {}
@@ -367,6 +375,18 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 				love.graphics.rectangle("line", x, y, scale, scale)
 			end
 		end)
+	end
+	if config.mobile then
+		love.graphics.setColor(1, 1, 1, 1)
+		love.graphics.rectangle("line", flagButton.x, flagButton.y, flagButton.width, flagButton.height)
+
+		if config.flagMode then
+			love.graphics.setColor(1, 1, 0, 1)
+		else
+			love.graphics.setColor(1, 1, 0, 0.25)
+		end
+		love.graphics.printf("F", tileFont,
+			flagButton.x + flagButton.width / 18, flagButton.y + flagButton.height / 50, flagButton.width, "center", 0, 1)
 	end
 	local splash = ""
 	if grid.gamestate.finished then
