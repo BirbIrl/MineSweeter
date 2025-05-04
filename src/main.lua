@@ -16,8 +16,29 @@ local config = {
 	pan = vector.new(0, 0),
 	pause = false,
 	enableRendering = true,
-	fieldsize = vector.new(1, 1)
+	fieldsize = vector.new(1, 1),
+	mobile = false,
+	flagMode = false,
 }
+
+local flagButton = {
+	width = 100,
+	height = 100,
+	x = 0,
+}
+flagButton.y = love.graphics.getHeight() - flagButton.height
+
+function flagButton:isWithinRange(pos)
+	if pos.x > self.x and pos.x < self.width + self.x
+		and pos.y > self.y and pos.y < self.height + self.y
+	then
+		return true
+	end
+end
+
+function flagButton.trigger()
+	config.flagMode = not config.flagMode
+end
 
 local gridTemplate = {
 	new = function(fieldsize)
@@ -135,10 +156,10 @@ local function triggerTile(grid, mousePos, mouseButton)
 			(mousePos.y - config.pan.y) / (size * globals.tileGap)
 		)
 		if grid.tiles[x] and grid.tiles[x][y] then
-			if mouseButton == 1 then
+			if mouseButton == 1 and not config.flagMode then
 				grid.tiles[x][y]:trigger(nil, true, grid.gamestate.forceClick)
 				grid.gamestate.forceClick = false
-			elseif mouseButton == 2 then
+			elseif mouseButton == 2 or config.flagMode then
 				grid.tiles[x][y]:flag()
 			elseif mouseButton == 3 then
 			else
@@ -200,7 +221,9 @@ function love.update(dt)
 		else
 			if input.m1.lastMousePos or input.m1.startingMousePos then
 				if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 then
-					if not config.pause then
+					if config.mobile and flagButton:isWithinRange(input.m1.lastMousePos) then
+						flagButton.trigger()
+					elseif not config.pause then
 						triggerTile(grid, input.m1.lastMousePos, 1)
 					end
 				end
@@ -231,7 +254,7 @@ function love.update(dt)
 		input.m1.lastMousePos = nil
 		input.m1.startingMousePos = nil
 		for i, value in ipairs(touches) do
-			globals.mobile = true
+			config.mobile = true
 			local t = "t" .. i
 			local x, y = love.touch.getPosition(value)
 			local pos = vector.new(x, y)
@@ -351,8 +374,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	elseif config.pause then
 		splash = "Game Paused"
 	elseif grid.gamestate.forceClick then
-		splash = serpent.block(input.t1) .. "\n" .. serpent.block(input.t2)
-		--splash = "Escape the void.\nClick the tile to begin."
+		splash = "Escape the void.\nClick the tile to begin."
 	end
 	local textScale = (love.graphics.getWidth() + love.graphics.getHeight()) / (1080 + 1920)
 	if textScale > 0.5 then
