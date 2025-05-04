@@ -18,7 +18,7 @@ local config = {
 	pause = false,
 	enableRendering = true,
 	fieldsize = vector.new(1, 1),
-	mobile = true,
+	mobile = false,
 	flagMode = false,
 }
 
@@ -214,12 +214,11 @@ function love.update(dt)
 		else
 			if input.m1.lastMousePos or input.m1.startingMousePos then
 				if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 then
-					if config.mobile then
-						if buttons.flag:isWithinRange(input.m1.lastMousePos) then
-							config.flagMode = not config.flagMode
-						elseif buttons.reset:isWithinRange(input.m1.lastMousePos) and grid.gamestate.finished then
-							grid = gridTemplate.new(config.fieldsize)
-						end
+					if config.mobile and buttons.flag:isWithinRange(input.m1.lastMousePos) then
+						config.flagMode = not config.flagMode
+					end
+					if buttons.reset:isWithinRange(input.m1.lastMousePos) and grid.gamestate.finished then
+						grid = gridTemplate.new(config.fieldsize)
 					end
 					if not config.pause then
 						triggerTile(grid, input.m1.lastMousePos, 1)
@@ -377,14 +376,14 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		love.graphics.printf("F", tileFont,
 			buttons.flag.x + buttons.flag.width / 18, buttons.flag.y + buttons.flag.height / 50, buttons.flag.width,
 			"center", 0, 1)
-		if grid.gamestate.finished then
-			love.graphics.setColor(1, 1, 1, 1)
-			love.graphics.rectangle("line", buttons.reset.x, buttons.reset.y, buttons.reset.width, buttons.reset.height)
-			love.graphics.printf("R", tileFont,
-				buttons.reset.x + buttons.reset.width / 18, buttons.reset.y + buttons.reset.height / 50,
-				buttons.reset.width,
-				"center", 0, 1)
-		end
+	end
+	if grid.gamestate.finished then
+		love.graphics.setColor(1, 1, 1, 1)
+		love.graphics.rectangle("line", buttons.reset.x, buttons.reset.y, buttons.reset.width, buttons.reset.height)
+		love.graphics.printf("R", tileFont,
+			buttons.reset.x + buttons.reset.width / 18, buttons.reset.y + buttons.reset.height / 50,
+			buttons.reset.width,
+			"center", 0, 1)
 	end
 	local splash = ""
 	if grid.gamestate.finished then
@@ -402,14 +401,29 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	love.graphics.printf(splash, tileFont, 0,
 		(love.graphics.getHeight() - (textScale * 200)) * 0.75, love.graphics.getWidth() / textScale,
 		"center", 0, textScale)
-	love.graphics.print(
+	local usefulInfo =
 		"VoidSweeper v1.0" ..
-		"\nFPS: " ..
-		love.timer.getFPS() ..
-		"\nVolume: " ..
-		math.floor(love.audio.getVolume() * 10) / 10 ..
-		"\nLeft click to reveal a tile\nRight Click to mark a mine\nDrag click to move the camera\nScroll to zoom in/out\nR to restart\nP to pause\n+/- to raise/lower volume\nf1 to disable rendering (debug)\nf11 to fullscreen",
-		tileFont, 0, 0, 0, 0.15)
+		"\nFPS: " .. love.timer.getFPS()
+	if config.mobile then
+		usefulInfo = usefulInfo ..
+			"\nTap on a tile to reveal it" ..
+			"\nUse flag button to switch to flag mode" ..
+			"\nYou can move/zoom the camera by dragging/pinching"
+	else
+		usefulInfo = usefulInfo ..
+			"\nVolume: " ..
+			math.floor(love.audio.getVolume() * 10) / 10 ..
+			"\nLeft click to reveal a tile" ..
+			"\nRight Click to mark a mine" ..
+			"\nDrag click to move the camera" ..
+			"\nScroll to zoom in/out" ..
+			"\nR to restart" ..
+			"\nP to pause" ..
+			"\n+/- to raise/lower volume" ..
+			"\nf1 to disable rendering (debug)" ..
+			"\nf11 to fullscreen"
+	end
+	love.graphics.print(usefulInfo, tileFont, 0, 0, 0, 0.15)
 end
 
 function love.wheelmoved(x, y)
