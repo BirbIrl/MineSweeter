@@ -431,9 +431,9 @@ function love.wheelmoved(x, y)
 end
 
 --[[
-TODO:
+TODO if i ever feel like it:
 # new anim system that can be toggled, so that highlight for macro is on hover not on click
 # non-void mode
-# proper text display system
-# scrolling with grid expanding
+# proper text display system (the font is currently bugged and has too high ascent)
+# auto scrolling with grid expanding
 --]]
