@@ -72,7 +72,7 @@ local gridTemplate = {
 			if modifier < 0 then
 				modifier = 1
 			end
-			self.gamestate.decayRate = globals.defaultDecayRate * math.pow(modifier, 0.8)
+			self.gamestate.decayRate = globals.defaultDecayRate * math.pow(modifier, 0.65)
 		end
 
 		if fieldsize then
