@@ -485,7 +485,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 				"\n- C to enable Chill Mode (void advances only when you click a tile)" ..
 				"\n- Space to enable force-flag for left click" ..
 				"\n- M to disable drag clicking" ..
-				"\n- [/] to raise/lower wasd camera speed" ..
+				"\n- ]/[ to raise/lower wasd camera speed" ..
 				"\n- +/- to raise/lower volume" ..
 				"\n- f1 to disable rendering (debug)" ..
 				"\n- f11 to fullscreen"
