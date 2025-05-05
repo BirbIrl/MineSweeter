@@ -77,10 +77,10 @@ tileTemplate = {
 			flagged = false,
 			position = position,
 			parentGrid = parentGrid,
-			decay = 2 + (love.math.random() * 1),
+			decay = 1 + (love.math.random() * 0.5),
 			anims = {},
 			decaying = false,
-			halflife = 1.5,
+			halflife = 0.75,
 			cleared = false,
 		}
 
