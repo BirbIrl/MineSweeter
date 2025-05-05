@@ -21,6 +21,8 @@ config = { --- @diagnostic disable-line: lowercase-global
 	showFlagButton = false,
 	flagMode = false,
 	chillMode = false,
+	panSpeed = 500,
+	dragging = true,
 }
 
 local gridTemplate = {
@@ -95,17 +97,23 @@ function love.keypressed(key)
 		config.pause = not config.pause
 	elseif key == "=" then
 		love.audio.setVolume(love.audio.getVolume() + 0.1)
-	elseif key == "c" then
-		config.chillMode = not config.chillMode
-	elseif key == "space" then
-		config.showFlagButton = true
-		config.flagMode = not config.flagMode
 	elseif key == "-" then
 		if love.audio.getVolume() < 0.1 then
 			love.audio.setVolume(0)
 		else
 			love.audio.setVolume(love.audio.getVolume() - 0.1)
 		end
+	elseif key == "]" then
+		config.panSpeed = config.panSpeed * 1.25
+	elseif key == "[" then
+		config.panSpeed = config.panSpeed / 1.25
+	elseif key == "c" then
+		config.chillMode = not config.chillMode
+	elseif key == "m" then
+		config.dragging = not config.dragging
+	elseif key == "space" then
+		config.showFlagButton = true
+		config.flagMode = not config.flagMode
 	elseif key == "f1" then
 		config.enableRendering = not config.enableRendering
 	elseif key == "f11" then
@@ -203,6 +211,16 @@ function love.update(dt)
 		end)
 	end
 
+	if love.keyboard.isDown("w") then
+		config.pan = config.pan + vector.new(0, config.panSpeed * dt)
+	elseif love.keyboard.isDown("s") then
+		config.pan = config.pan + vector.new(0, -config.panSpeed * dt)
+	end
+	if love.keyboard.isDown("d") then
+		config.pan = config.pan + vector.new(-config.panSpeed * dt, 0)
+	elseif love.keyboard.isDown("a") then
+		config.pan = config.pan + vector.new(config.panSpeed * dt, 0)
+	end
 	local touches = love.touch.getTouches()
 	if touches[1] and not config.mobile then
 		config.mobile = true
@@ -216,7 +234,7 @@ function love.update(dt)
 		input.t2.touchId = nil
 		if love.mouse.isDown(1) then
 			local newPos = vector.new(love.mouse.getPosition())
-			if input.m1.lastMousePos then
+			if input.m1.lastMousePos and config.dragging then
 				config.pan.x = config.pan.x + (newPos.x - input.m1.lastMousePos.x)
 				config.pan.y = config.pan.y + (newPos.y - input.m1.lastMousePos.y)
 			end
@@ -224,7 +242,7 @@ function love.update(dt)
 			input.m1.lastMousePos = newPos
 		else
 			if input.m1.lastMousePos or input.m1.startingMousePos then
-				if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 then
+				if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 or not config.dragging then
 					if config.showFlagButton and buttons.flag:isWithinRange(input.m1.lastMousePos) then
 						config.flagMode = not config.flagMode
 					elseif (grid.gamestate.finished or grid.gamestate.forceClick) and config.mobile and buttons.chill:isWithinRange(input.m1.lastMousePos) then
@@ -242,14 +260,14 @@ function love.update(dt)
 		if love.mouse.isDown(2) then
 			local newPos = vector.new(love.mouse.getPosition())
 			input.m2.startingMousePos = input.m2.startingMousePos or newPos
-			if input.m2.lastMousePos then
+			if input.m2.lastMousePos and config.dragging then
 				config.pan.x = config.pan.x + (newPos.x - input.m2.lastMousePos.x)
 				config.pan.y = config.pan.y + (newPos.y - input.m2.lastMousePos.y)
 			end
 			input.m2.lastMousePos = newPos
 		else
 			if input.m2.lastMousePos or input.m2.startingMousePos then
-				if input.m2.lastMousePos:dist(input.m2.startingMousePos) <= 10 then
+				if input.m2.lastMousePos:dist(input.m2.startingMousePos) <= 10 or not config.dragging then
 					if not config.pause then
 						triggerTile(grid, input.m2.lastMousePos, 2)
 					end
@@ -317,7 +335,11 @@ local function printTileLabel(tile, x, y, tileSize, scale, tileOpacity)
 		if tile.halflife then
 			color = { 1, 1, 0, 1 * tileOpacity }
 		else
-			color = { 1, 1, 0, 0.5 * tileOpacity }
+			if tile.mine then
+				color = { 1, 1, 0, 0.5 * tileOpacity }
+			else
+				color = { 1, 0, 0, 1 * tileOpacity }
+			end
 		end
 	end
 
@@ -456,12 +478,14 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 				math.floor(love.audio.getVolume() * 10) / 10 ..
 				"\n- Left click to reveal a tile" ..
 				"\n- Right Click to place a flag" ..
-				"\n- Drag click to move the camera" ..
+				"\n- Drag click/wasd to move the camera" ..
 				"\n- Scroll to zoom in/out" ..
 				"\n- R to restart" ..
 				"\n- P to pause" ..
 				"\n- C to enable Chill Mode (void advances only when you click a tile)" ..
 				"\n- Space to enable force-flag for left click" ..
+				"\n- M to disable drag clicking" ..
+				"\n- [/] to raise/lower wasd camera speed" ..
 				"\n- +/- to raise/lower volume" ..
 				"\n- f1 to disable rendering (debug)" ..
 				"\n- f11 to fullscreen"
