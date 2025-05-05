@@ -77,10 +77,10 @@ tileTemplate = {
 			flagged = false,
 			position = position,
 			parentGrid = parentGrid,
-			decay = 1 + (love.math.random() * 0.5),
+			decay = 2 + (love.math.random() * 1),
 			anims = {},
 			decaying = false,
-			halflife = 0.5,
+			halflife = 1.5,
 			cleared = false,
 		}
 
@@ -224,13 +224,6 @@ tileTemplate = {
 				tile.decay = tile.decay - self.parentGrid.gamestate.decayRate * dt
 			end
 			if tile.decay < 0 then
-				if tile.flagged then
-					if tile.mine then
-						self:startDecayInRadius(4, true, false, -0.25, 0.5)
-					else
-						self:startDecayInRadius(4, true, false, 0.25, 0.5)
-					end
-				end
 				tile.decay = 0
 				tile.loaded = false
 				local unloadedGrid = self.parentGrid.unloadedTiles
@@ -239,6 +232,13 @@ tileTemplate = {
 				self.parentGrid.tiles[self.position.x][self.position.y] = nil
 			end
 			if tile.halflife and tile.decay < tile.halflife then
+				if self.flagged then
+					if tile.mine then
+						self:startDecayInRadius(4, true, false, -0.25, 0.5)
+					else
+						self:startDecayInRadius(3, true, false, 0.25, 0.5)
+					end
+				end
 				tile:startDecayInRadius(1, true)
 				tile.halflife = false
 			end

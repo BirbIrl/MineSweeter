@@ -312,7 +312,11 @@ local function printTileLabel(tile, x, y, tileSize, scale, tileOpacity)
 
 	if tile.flagged then
 		label = "F"
-		color = { 1, 1, 0, 1 * tileOpacity }
+		if tile.halflife then
+			color = { 1, 1, 0, 1 * tileOpacity }
+		else
+			color = { 1, 1, 0, 0.5 * tileOpacity }
+		end
 	end
 
 	love.graphics.print({ color, label }, tileFont, x + scale / 4.5, y - scale * 0.26,
