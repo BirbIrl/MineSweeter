@@ -195,7 +195,6 @@ tileTemplate = {
 						tile.anims[#tile.anims + 1] = anims.popScale(1 - strength * 0.15 / (tileRadius * falloff), 0.25)
 					end
 					tile.decay = tile.decay - strength / (tileRadius * falloff)
-					if tile.decay > 1.5 then tile.decay = 1.5 end
 				end
 			end, self.position, radius, curve, includeSelf)
 		end
@@ -250,6 +249,22 @@ tileTemplate = {
 			end
 		end
 
+		function tile:chord()
+			if self.label == self:countInRadiusFlagsOrRevealedBombs() then
+				if self.parentGrid.gamestate.freebies > 0 then
+					chainSource = self.position
+				end
+				if self:triggerInRadius(1, false, true) > 0 then
+					sounds.reveal:clone():play()
+				else
+					sounds.fail:clone():play()
+				end
+			else
+				self:highlightForMacroInRadius()
+				sounds.fail:clone():play()
+			end
+		end
+
 		function tile:trigger(chainSource, player, force)
 			if not chainSource then
 				chainSource = self.position
@@ -274,7 +289,7 @@ tileTemplate = {
 						self.decaying = true
 					end
 					if self.mine then
-						self:startDecayInRadius(4, true, false, 1, 0.5)
+						self:startDecayInRadius(4, true, false, 1, 0.4)
 						self.decaying = true
 						sounds.boom:play()
 					else
@@ -288,30 +303,24 @@ tileTemplate = {
 					self.parentGrid.gamestate.score.tiles = self.parentGrid.gamestate.score.tiles + 1
 					return true
 				else
-					if player and self.label == self:countInRadiusFlagsOrRevealedBombs() then
-						if self.parentGrid.gamestate.freebies > 0 then
-							chainSource = self.position
-						end
-						if self:triggerInRadius(1, false, true) > 0 then
-							sounds.reveal:clone():play()
-						else
-							sounds.fail:clone():play()
-						end
-					elseif player then
-						self:highlightForMacroInRadius()
-						sounds.fail:clone():play()
+					if player then
+						tile:chord()
 					end
 				end
 			end
 		end
 
-		function tile:flag()
+		function tile:flag(player)
 			self.anims[#self.anims + 1] = anims.popScale(1.15, 0.15)
-			if self.mine ~= nil and not self.cleared then
-				self.flagged = not self.flagged
-				sounds.flag:clone():play()
-			else
-				sounds.fail:clone():play()
+			if not self.cleared then
+				if self.mine ~= nil then
+					self.flagged = not self.flagged
+					sounds.flag:clone():play()
+				else
+					sounds.fail:clone():play()
+				end
+			elseif player then
+				tile:chord()
 			end
 		end
 

@@ -72,7 +72,7 @@ local gridTemplate = {
 			if modifier < 0 then
 				modifier = 1
 			end
-			self.gamestate.decayRate = globals.defaultDecayRate * math.pow(modifier, 0.65)
+			self.gamestate.decayRate = globals.defaultDecayRate * math.pow(modifier, 0.5)
 		end
 
 		if fieldsize then
@@ -151,7 +151,7 @@ local function triggerTile(grid, mousePos, mouseButton)
 				grid.tiles[x][y]:trigger(nil, true, grid.gamestate.forceClick)
 				grid.gamestate.forceClick = false
 			elseif mouseButton == 2 or config.flagMode then
-				grid.tiles[x][y]:flag()
+				grid.tiles[x][y]:flag(true)
 			elseif mouseButton == 3 then
 			else
 				error("need to provide mouse button for triggerTile")
@@ -161,7 +161,9 @@ local function triggerTile(grid, mousePos, mouseButton)
 
 	if config.chillMode and not grid.gamestate.finished then
 		grid:lambdaOnAllTiles(function(tile)
-			tile:tick(0.25)
+			for i = 1, 10, 1 do
+				tile:tick(0.025)
+			end
 		end)
 	end
 end
