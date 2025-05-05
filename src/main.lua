@@ -456,7 +456,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		(love.graphics.getHeight() - (textScale * 200)) * 0.75, love.graphics.getWidth() / textScale,
 		"center", 0, textScale)
 	local usefulInfo =
-		"VoidSweeper v1.2" ..
+		"VoidSweeper v1.3" ..
 		"\nDeveloped by birbirl" ..
 		"\nFPS: " .. love.timer.getFPS()
 	if config.chillMode then
