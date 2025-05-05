@@ -18,6 +18,7 @@ local config = {
 	enableRendering = true,
 	fieldsize = vector.new(1, 1),
 	mobile = false,
+	showFlagButton = false,
 	flagMode = false,
 }
 
@@ -90,6 +91,9 @@ function love.keypressed(key)
 		config.pause = not config.pause
 	elseif key == "=" then
 		love.audio.setVolume(love.audio.getVolume() + 0.1)
+	elseif key == "space" then
+		config.showFlagButton = true
+		config.flagMode = not config.flagMode
 	elseif key == "-" then
 		if love.audio.getVolume() < 0.1 then
 			love.audio.setVolume(0)
@@ -188,6 +192,7 @@ function love.update(dt)
 	local touches = love.touch.getTouches()
 	if touches[1] and not config.mobile then
 		config.mobile = true
+		config.showFlagButton = true
 	end
 
 	if not touches[2] then
@@ -206,7 +211,7 @@ function love.update(dt)
 		else
 			if input.m1.lastMousePos or input.m1.startingMousePos then
 				if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 then
-					if config.mobile and buttons.flag:isWithinRange(input.m1.lastMousePos) then
+					if config.showFlagButton and buttons.flag:isWithinRange(input.m1.lastMousePos) then
 						config.flagMode = not config.flagMode
 					elseif buttons.reset:isWithinRange(input.m1.lastMousePos) and grid.gamestate.finished then
 						grid = gridTemplate.new(config.fieldsize)
@@ -357,7 +362,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 			end
 		end)
 	end
-	if config.mobile then
+	if config.showFlagButton then
 		love.graphics.setColor(1, 1, 1, 1)
 		love.graphics.rectangle("line", buttons.flag.x, buttons.flag.y, buttons.flag.width, buttons.flag.height)
 
@@ -408,11 +413,12 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 				"\n- Volume: " ..
 				math.floor(love.audio.getVolume() * 10) / 10 ..
 				"\n- Left click to reveal a tile" ..
-				"\n- Right Click to mark a mine" ..
+				"\n- Right Click to place a flag" ..
 				"\n- Drag click to move the camera" ..
 				"\n- Scroll to zoom in/out" ..
 				"\n- R to restart" ..
 				"\n- P to pause" ..
+				"\n- Space to enable force-flag for left click" ..
 				"\n- +/- to raise/lower volume" ..
 				"\n- f1 to disable rendering (debug)" ..
 				"\n- f11 to fullscreen"
