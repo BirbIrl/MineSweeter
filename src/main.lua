@@ -11,7 +11,7 @@ local buttons = require "buttons" -- woe lua syntax be upon ye
 local tileFont = love.graphics.newFont("data/fonts/monocraft-birb-fix.ttf", 100)
 love.graphics.setDefaultFilter("nearest")
 
-local config = {
+config = { --- @diagnostic disable-line: lowercase-global
 	zoom = 2,
 	pan = vector.new(0, 0),
 	pause = false,
@@ -20,6 +20,7 @@ local config = {
 	mobile = false,
 	showFlagButton = false,
 	flagMode = false,
+	chillMode = false,
 }
 
 local gridTemplate = {
@@ -27,7 +28,7 @@ local gridTemplate = {
 		local grid = {}
 		grid.gamestate = {
 			forceClick = true,
-			freebies = love.math.random(10, 10),
+			freebies = love.math.random(9, 9),
 			finished = false,
 			decayRate = globals.defaultDecayRate
 		}
@@ -67,8 +68,11 @@ local gridTemplate = {
 		end
 
 		function grid:tick()
-			self.gamestate.decayRate = globals.defaultDecayRate * math.sqrt(self.gamestate.score.tiles)
-			--print(self.gamestate.decayRate / globals.defaultDecayRate)
+			local modifier = self.gamestate.score.tiles - 20
+			if modifier < 0 then
+				modifier = 1
+			end
+			self.gamestate.decayRate = globals.defaultDecayRate * math.pow(modifier, 0.8)
 		end
 
 		if fieldsize then
@@ -91,6 +95,8 @@ function love.keypressed(key)
 		config.pause = not config.pause
 	elseif key == "=" then
 		love.audio.setVolume(love.audio.getVolume() + 0.1)
+	elseif key == "c" then
+		config.chillMode = not config.chillMode
 	elseif key == "space" then
 		config.showFlagButton = true
 		config.flagMode = not config.flagMode
@@ -152,6 +158,12 @@ local function triggerTile(grid, mousePos, mouseButton)
 			end
 		end
 	end
+
+	if config.chillMode and not grid.gamestate.finished then
+		grid:lambdaOnAllTiles(function(tile)
+			tile:tick(0.25)
+		end)
+	end
 end
 local tickTimer = 0
 local ticksThisSecond = 0
@@ -165,10 +177,10 @@ function love.update(dt)
 			local aliveTiles = 0
 			grid:tick()
 			grid:lambdaOnAllTiles(function(tile)
-				if not grid.gamestate.finished then
+				if not (grid.gamestate.finished or config.chillMode) then
 					tile:tick(dt)
 				end
-				if tile.mine ~= nil and tile.decay > 0 then
+				if tile.mine == false and tile.decay > 0 then
 					aliveTiles = aliveTiles + 1
 				end
 			end)
@@ -213,7 +225,9 @@ function love.update(dt)
 				if input.m1.lastMousePos:dist(input.m1.startingMousePos) <= 10 then
 					if config.showFlagButton and buttons.flag:isWithinRange(input.m1.lastMousePos) then
 						config.flagMode = not config.flagMode
-					elseif buttons.reset:isWithinRange(input.m1.lastMousePos) and grid.gamestate.finished then
+					elseif (grid.gamestate.finished or grid.gamestate.forceClick) and config.mobile and buttons.chill:isWithinRange(input.m1.lastMousePos) then
+						config.chillMode = not config.chillMode
+					elseif buttons.reset:isWithinRange(input.m1.lastMousePos) and (grid.gamestate.finished or grid.gamestate.forceClick) then
 						grid = gridTemplate.new(config.fieldsize)
 					elseif not config.pause then
 						triggerTile(grid, input.m1.lastMousePos, 1)
@@ -375,13 +389,27 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 			buttons.flag.x + buttons.flag.width / 18, buttons.flag.y - buttons.flag.height * 0.26, buttons.flag.width,
 			"center", 0, 1)
 	end
-	if grid.gamestate.finished then
-		love.graphics.setColor(1, 1, 1, 1)
-		love.graphics.rectangle("line", buttons.reset.x, buttons.reset.y, buttons.reset.width, buttons.reset.height)
-		love.graphics.printf("R", tileFont,
-			buttons.reset.x + buttons.reset.width / 18, buttons.reset.y - buttons.reset.height * 0.26,
-			buttons.reset.width,
-			"center", 0, 1)
+	if grid.gamestate.finished or grid.gamestate.forceClick then
+		if config.mobile then
+			love.graphics.setColor(1, 1, 1, 1)
+			love.graphics.rectangle("line", buttons.reset.x, buttons.reset.y, buttons.reset.width, buttons.reset.height)
+			love.graphics.printf("R", tileFont,
+				buttons.reset.x + buttons.reset.width / 18, buttons.reset.y - buttons.reset.height * 0.26,
+				buttons.reset.width,
+				"center", 0, 1)
+			love.graphics.setColor(1, 1, 1, 1)
+			love.graphics.rectangle("line", buttons.chill.x, buttons.chill.y, buttons.chill.width, buttons.chill.height)
+
+			if config.chillMode then
+				love.graphics.setColor(1, 1, 1, 1)
+			else
+				love.graphics.setColor(1, 1, 1, 0.25)
+			end
+			love.graphics.printf("C", tileFont,
+				buttons.chill.x + buttons.chill.width / 18, buttons.chill.y - buttons.chill.height * 0.26,
+				buttons.chill.width,
+				"center", 0, 1)
+		end
 	end
 	local splash = ""
 	if grid.gamestate.finished then
@@ -402,12 +430,16 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 	local usefulInfo =
 		"VoidSweeper v1.0" ..
 		"\nFPS: " .. love.timer.getFPS()
+	if config.chillMode then
+		usefulInfo = usefulInfo .. "\nChill Mode Enabled!"
+	end
 	if grid.gamestate.forceClick or config.pause then
 		if config.mobile then
 			usefulInfo = usefulInfo ..
 				"\n- Tap on a tile to reveal it" ..
-				"\n- Use flag button to switch to flag mode" ..
-				"\n- You can move/zoom the camera by dragging/pinching"
+				"\n- Use F button to switch to flag mode" ..
+				"\n- You can move/zoom the camera by dragging/pinching" ..
+				"\n- Use the C button to enable Chill Mode (void advances only when you tap a tile)"
 		else
 			usefulInfo = usefulInfo ..
 				"\n- Volume: " ..
@@ -418,6 +450,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 				"\n- Scroll to zoom in/out" ..
 				"\n- R to restart" ..
 				"\n- P to pause" ..
+				"\n- C to enable Chill Mode (void advances only when you click a tile)" ..
 				"\n- Space to enable force-flag for left click" ..
 				"\n- +/- to raise/lower volume" ..
 				"\n- f1 to disable rendering (debug)" ..

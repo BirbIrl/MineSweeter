@@ -41,4 +41,27 @@ function resetButton:update()
 end
 
 buttons.reset = resetButton
+
+local chillButton = {
+	width = 100,
+	height = 100,
+}
+chillButton.x = love.graphics.getWidth() - chillButton.width - 100
+chillButton.y = love.graphics.getHeight() - chillButton.height
+
+function chillButton:isWithinRange(pos)
+	if pos.x > self.x and pos.x < self.width + self.x
+		and pos.y > self.y and pos.y < self.height + self.y
+	then
+		return true
+	end
+end
+
+function chillButton:update()
+	self.x = love.graphics.getWidth() - self.width - 100
+	self.y = love.graphics.getHeight() - self.height
+end
+
+buttons.chill = chillButton
+
 return buttons

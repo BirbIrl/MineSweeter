@@ -1,6 +1,6 @@
 return {
 	tilesize = 25,
 	tileGap = 1.25,
-	mineChance = 0.1,
-	defaultDecayRate = 0.001,
+	mineChance = 0.12,
+	defaultDecayRate = 0.03,
 }

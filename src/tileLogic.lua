@@ -214,9 +214,9 @@ tileTemplate = {
 			end
 		end
 
-		function tile:tick()
+		function tile:tick(dt)
 			if tile.decaying and tile.decay > 0 then
-				tile.decay = tile.decay - self.parentGrid.gamestate.decayRate
+				tile.decay = tile.decay - self.parentGrid.gamestate.decayRate * dt
 			end
 			if tile.decay < 0 then
 				tile.decay = 0
