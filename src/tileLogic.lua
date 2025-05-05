@@ -189,8 +189,13 @@ tileTemplate = {
 			falloff = falloff or 1
 			return self:lambdaInRadius(function(tile, tileRadius)
 				if tile.decay > 0 then
-					tile.decaying = true
+					if strength >= 0 then
+						tile.decaying = true
+					else
+						tile.anims[#tile.anims + 1] = anims.popScale(1 - strength * 0.15 / (tileRadius * falloff), 0.25)
+					end
 					tile.decay = tile.decay - strength / (tileRadius * falloff)
+					if tile.decay > 1.5 then tile.decay = 1.5 end
 				end
 			end, self.position, radius, curve, includeSelf)
 		end
@@ -219,6 +224,13 @@ tileTemplate = {
 				tile.decay = tile.decay - self.parentGrid.gamestate.decayRate * dt
 			end
 			if tile.decay < 0 then
+				if tile.flagged then
+					if tile.mine then
+						self:startDecayInRadius(4, true, false, -0.25, 0.5)
+					else
+						self:startDecayInRadius(4, true, false, 0.25, 0.5)
+					end
+				end
 				tile.decay = 0
 				tile.loaded = false
 				local unloadedGrid = self.parentGrid.unloadedTiles
@@ -263,6 +275,7 @@ tileTemplate = {
 					end
 					if self.mine then
 						self:startDecayInRadius(4, true, false, 1, 0.5)
+						self.decaying = true
 						sounds.boom:play()
 					else
 						if player then

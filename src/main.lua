@@ -428,12 +428,16 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		(love.graphics.getHeight() - (textScale * 200)) * 0.75, love.graphics.getWidth() / textScale,
 		"center", 0, textScale)
 	local usefulInfo =
-		"VoidSweeper v1.1a" ..
+		"VoidSweeper v1.2" ..
+		"\nDeveloped by birbirl" ..
 		"\nFPS: " .. love.timer.getFPS()
 	if config.chillMode then
 		usefulInfo = usefulInfo .. "\nChill Mode Enabled!"
 	end
 	if grid.gamestate.forceClick or config.pause then
+		usefulInfo = usefulInfo ..
+			"\n!When a tile with a flag is consumed, it restores tiles around it if it's correct, and destroys tiles if it's wrong" ..
+			"\n!The void speeds up as more tiles get revealed"
 		if config.mobile then
 			usefulInfo = usefulInfo ..
 				"\n- Tap on a tile to reveal it" ..
