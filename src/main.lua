@@ -178,7 +178,7 @@ function love.update(dt)
 			grid:tick()
 			grid:lambdaOnAllTiles(function(tile)
 				if not (grid.gamestate.finished or config.chillMode) then
-					tile:tick(dt)
+					tile:tick(1 / 60)
 				end
 				if tile.mine == false and tile.decay > 0 then
 					aliveTiles = aliveTiles + 1
