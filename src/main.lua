@@ -22,6 +22,7 @@ config = { --- @diagnostic disable-line: lowercase-global
 	flagMode = false,
 	chillMode = false,
 	panSpeed = 500,
+	flow = vector.new(0, 0),
 	dragging = true,
 }
 
@@ -212,19 +213,23 @@ function love.update(dt)
 	end
 
 	if love.keyboard.isDown("w") then
-		config.pan = config.pan + vector.new(0, config.panSpeed * dt)
+		config.flow = config.flow + vector.new(0, config.panSpeed * dt)
 	elseif love.keyboard.isDown("s") then
-		config.pan = config.pan + vector.new(0, -config.panSpeed * dt)
+		config.flow = config.flow + vector.new(0, -config.panSpeed * dt)
 	end
 	if love.keyboard.isDown("d") then
-		config.pan = config.pan + vector.new(-config.panSpeed * dt, 0)
+		config.flow = config.flow + vector.new(-config.panSpeed * dt, 0)
 	elseif love.keyboard.isDown("a") then
-		config.pan = config.pan + vector.new(config.panSpeed * dt, 0)
+		config.flow = config.flow + vector.new(config.panSpeed * dt, 0)
 	end
 	local touches = love.touch.getTouches()
 	if touches[1] and not config.mobile then
 		config.mobile = true
 		config.showFlagButton = true
+	end
+	if config.flow:getmag() > 0 then
+		config.flow = config.flow * 0.8
+		config.pan = config.pan + config.flow
 	end
 
 	if not touches[2] then
