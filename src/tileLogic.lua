@@ -184,8 +184,10 @@ tileTemplate = {
 				if self.flagged then
 					if tile.mine then
 						self:startDecayInRadius(4, true, false, -0.25, 0.5)
+						sounds.flag:clone():play()
 					else
 						self:startDecayInRadius(3, true, false, 0.25, 0.5)
+						sounds.boom:clone():play()
 					end
 					tile.anims[#tile.anims + 1] = anims.popUp()
 					tile.anims[#tile.anims + 1] = anims.shove()
