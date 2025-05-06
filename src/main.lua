@@ -187,18 +187,20 @@ function love.update(dt)
 			ticksThisSecond = ticksThisSecond + 1
 			local aliveTiles = 0
 			grid:tick()
-			grid:lambdaOnAllTiles(function(tile)
-				if not (grid.gamestate.finished or config.chillMode) then
+			if not (grid.gamestate.finished or config.chillMode) then
+				grid:lambdaOnAllTiles(function(tile)
 					tile:tick(1 / 60)
-				end
-				if tile.mine == false and tile.decay > 0 then
-					aliveTiles = aliveTiles + 1
-				end
-			end)
+					if tile.mine == false and tile.decay > 0 then
+						aliveTiles = aliveTiles + 1
+					end
+				end)
+			end
 			if aliveTiles == 0 and not grid.gamestate.forceClick and not grid.gamestate.finished then
 				grid.gamestate.finished = true
 				sounds.gameEnd:play()
 				grid:lambdaOnAllTiles(function(tile)
+					tile.anims = {}
+					tile.exhausted = nil
 					tile.parentGrid.tiles[tile.position.x] = tile.parentGrid.tiles[tile.position.x] or {}
 					tile.parentGrid.tiles[tile.position.x][tile.position.y] = tile
 					tile.parentGrid.unloadedTiles[tile.position.x][tile.position.y] = nil

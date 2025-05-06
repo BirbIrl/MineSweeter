@@ -163,38 +163,44 @@ tileTemplate = {
 		end
 
 		function tile:tick(dt)
-			if tile.decaying and tile.decay > 0 then
-				if tile.exhausted then
-					tile.exhausted = tile.exhausted - (dt * 4)
-					tile.decay = tile.exhausted
-				else
-					tile.decay = tile.decay - self.parentGrid.gamestate.decayRate * dt
-				end
+			if self.exhausted then
+				self.exhausted = self.exhausted - (dt * 4)
+				print(self.exhausted)
+				self.decay = self.exhausted
+			elseif self.decaying and self.decay > 0 then
+				self.decay = self.decay - self.parentGrid.gamestate.decayRate * dt
 			end
-			if tile.decay < 0 and
-				(not tile.exhausted or tile.exhausted < -16) then
-				tile.decay = 0
-				tile.loaded = false
-				local unloadedGrid = self.parentGrid.unloadedTiles
-				unloadedGrid[self.position.x] = unloadedGrid[self.position.x] or {}
-				unloadedGrid[self.position.x][self.position.y] = self
-				self.parentGrid.tiles[self.position.x][self.position.y] = nil
-			end
-			if tile.halflife and tile.decay < tile.halflife then
+			if self.halflife and self.decay < self.halflife then
 				if self.flagged then
-					if tile.mine then
+					if self.mine then
 						self:startDecayInRadius(4, true, false, -0.25, 0.5)
 						sounds.flag:clone():play()
 					else
 						self:startDecayInRadius(3, true, false, 0.25, 0.5)
 						sounds.boom:clone():play()
 					end
-					tile.anims[#tile.anims + 1] = anims.popUp()
-					tile.anims[#tile.anims + 1] = anims.shove()
-					tile.exhausted = 1
+					self.anims[#self.anims + 1] = anims.popUp()
+					self.anims[#self.anims + 1] = anims.shove()
+					if self.decay < 0.5 then
+						self.decay = 1
+					end
+					self.exhausted = self.decay
 				end
-				tile:startDecayInRadius(1, true)
-				tile.halflife = false
+				self:startDecayInRadius(1, true)
+				self.halflife = false
+			end
+			if self.decay < 0 and
+				(not self.exhausted or self.exhausted < -4) then
+				self.decay = 0
+				self.loaded = false
+				if self.flagged then
+					print("flag purged")
+				end
+				self.anims = {}
+				local unloadedGrid = self.parentGrid.unloadedTiles
+				unloadedGrid[self.position.x] = unloadedGrid[self.position.x] or {}
+				unloadedGrid[self.position.x][self.position.y] = self
+				self.parentGrid.tiles[self.position.x][self.position.y] = nil
 			end
 		end
 
