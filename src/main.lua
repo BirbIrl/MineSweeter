@@ -187,9 +187,11 @@ function love.update(dt)
 			ticksThisSecond = ticksThisSecond + 1
 			local aliveTiles = 0
 			grid:tick()
-			if not (grid.gamestate.finished or config.chillMode) then
+			if not (grid.gamestate.finished) then
 				grid:lambdaOnAllTiles(function(tile)
-					tile:tick(1 / 60)
+					if not config.chillMode then
+						tile:tick(1 / 60)
+					end
 					if tile.mine == false and tile.decay > 0 then
 						aliveTiles = aliveTiles + 1
 					end
@@ -457,7 +459,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		(love.graphics.getHeight() - (textScale * 200)) * 0.75, love.graphics.getWidth() / textScale,
 		"center", 0, textScale)
 	local usefulInfo =
-		"VoidSweeper v1.4" ..
+		"VoidSweeper v1.4a" ..
 		"\nDeveloped by birbirl" ..
 		"\nFPS: " .. love.timer.getFPS()
 	if config.chillMode then
