@@ -200,7 +200,6 @@ function love.update(dt)
 				sounds.gameEnd:play()
 				grid:lambdaOnAllTiles(function(tile)
 					tile.anims = {}
-					tile.exhausted = nil
 					tile.parentGrid.tiles[tile.position.x] = tile.parentGrid.tiles[tile.position.x] or {}
 					tile.parentGrid.tiles[tile.position.x][tile.position.y] = tile
 					tile.parentGrid.unloadedTiles[tile.position.x][tile.position.y] = nil
@@ -339,14 +338,9 @@ local function printTileLabel(tile, x, y, tileSize, scale, tileOpacity)
 
 	if tile.flagged then
 		label = "F"
-		if tile.halflife then
-			color = { 1, 1, 0, 1 * tileOpacity }
-		else
-			if tile.mine then
-				color = { 1, 1, 0, 0.5 * tileOpacity }
-			else
-				color = { 1, 0, 0, 1 * tileOpacity }
-			end
+		color = { 1, 1, 0, 1 * tileOpacity }
+		if not tile.mine and tile.exhausted then
+			color = { 1, 0, 0, 1 * tileOpacity }
 		end
 	end
 
@@ -463,7 +457,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 		(love.graphics.getHeight() - (textScale * 200)) * 0.75, love.graphics.getWidth() / textScale,
 		"center", 0, textScale)
 	local usefulInfo =
-		"VoidSweeper v1.3" ..
+		"VoidSweeper v1.4" ..
 		"\nDeveloped by birbirl" ..
 		"\nFPS: " .. love.timer.getFPS()
 	if config.chillMode then

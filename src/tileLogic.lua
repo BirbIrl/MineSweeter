@@ -165,7 +165,6 @@ tileTemplate = {
 		function tile:tick(dt)
 			if self.exhausted then
 				self.exhausted = self.exhausted - (dt * 4)
-				print(self.exhausted)
 				self.decay = self.exhausted
 			elseif self.decaying and self.decay > 0 then
 				self.decay = self.decay - self.parentGrid.gamestate.decayRate * dt
