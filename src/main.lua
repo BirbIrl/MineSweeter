@@ -372,7 +372,7 @@ function love.draw() ---@diagnostic disable-line: duplicate-set-field
 					if trait == "scale" then
 						scale = scale * values.x
 					elseif trait == "translate" then
-						translate = vector.new(values.x, values.y)
+						translate = translate + vector.new(values.x, values.y)
 					elseif trait == "opacity" then
 						tileOpacity = tileOpacity * values
 					end

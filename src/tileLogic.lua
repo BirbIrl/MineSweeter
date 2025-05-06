@@ -25,6 +25,7 @@ tileTemplate = {
 			decaying = false,
 			halflife = 0.75,
 			cleared = false,
+			exhausted = nil
 		}
 
 		function tile:lambdaInRadius(func, pos, radius, curve, includeSelf)
@@ -163,9 +164,15 @@ tileTemplate = {
 
 		function tile:tick(dt)
 			if tile.decaying and tile.decay > 0 then
-				tile.decay = tile.decay - self.parentGrid.gamestate.decayRate * dt
+				if tile.exhausted then
+					tile.exhausted = tile.exhausted - (dt * 4)
+					tile.decay = tile.exhausted
+				else
+					tile.decay = tile.decay - self.parentGrid.gamestate.decayRate * dt
+				end
 			end
-			if tile.decay < 0 then
+			if tile.decay < 0 and
+				(not tile.exhausted or tile.exhausted < -16) then
 				tile.decay = 0
 				tile.loaded = false
 				local unloadedGrid = self.parentGrid.unloadedTiles
@@ -180,6 +187,9 @@ tileTemplate = {
 					else
 						self:startDecayInRadius(3, true, false, 0.25, 0.5)
 					end
+					tile.anims[#tile.anims + 1] = anims.popUp()
+					tile.anims[#tile.anims + 1] = anims.shove()
+					tile.exhausted = 1
 				end
 				tile:startDecayInRadius(1, true)
 				tile.halflife = false
@@ -187,17 +197,19 @@ tileTemplate = {
 		end
 
 		function tile:updateAnim(dt)
-			for _, anim in pairs(self.anims) do
-				anim:tick(dt)
+			for i, anim in pairs(self.anims) do
+				if not anim:tick(dt) then
+					self.anims[i] = nil
+				end
 			end
 		end
 
-		function tile:chord()
+		function tile:chord(chainSource)
 			if self.label == self:countInRadiusFlagsOrRevealedBombs() then
 				if self.parentGrid.gamestate.freebies > 0 then
 					chainSource = self.position
 				end
-				if self:triggerInRadius(1, false, true) > 0 then
+				if self:triggerInRadius(1, false, true, chainSource) > 0 then
 					sounds.reveal:clone():play()
 				else
 					sounds.fail:clone():play()
@@ -209,6 +221,9 @@ tileTemplate = {
 		end
 
 		function tile:trigger(chainSource, player, force)
+			if player and tile.exhausted then
+				return false
+			end
 			if not chainSource then
 				chainSource = self.position
 				self.anims[#self.anims + 1] = anims.popScale(1.15, 0.15)
@@ -247,7 +262,7 @@ tileTemplate = {
 					return true
 				else
 					if player then
-						tile:chord()
+						tile:chord(chainSource)
 					end
 				end
 			end
