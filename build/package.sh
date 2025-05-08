@@ -18,7 +18,7 @@ zip -r ../VoidSweeperWin64.zip *
 cd ..
 rm -r ./VoidSweeper
 #android
-ln -f VoidSweeper.love ../mobile/assets/VoidSweeper.love
+ln -f VoidSweeper.love ../mobile/assets/game.love
 apktool b -o unverified.apk ../mobile
 apksigner sign --ks ~/.keystore --out VoidSweeper.apk unverified.apk
 rm unverified.apk
